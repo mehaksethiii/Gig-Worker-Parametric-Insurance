@@ -37,20 +37,72 @@ When these thresholds are crossed, the system automatically triggers compensatio
 Weekly Pricing Model
 
 The insurance follows a weekly subscription model aligned with gig worker earning cycles.
-Plan	Weekly Premium	Max Weekly Payout
-Basic	        ₹20	                  ₹500
-Standard	       ₹30	              ₹750
-Premium	₹40	                ₹1000
+Plan	    Weekly Premium	    Max Weekly Payout
+Basic	          ₹20	              ₹500
+Standard	      ₹30	              ₹750
+Premium	        ₹40	              ₹1000
 
 Example
-
 If rainfall stops deliveries for 4 hours:
-
 Lost Income = 4 × ₹120 = ₹480
-
 The system automatically pays ₹480 to the rider.
-4. justifying choice between web or app- 
 
+4.   Justifying choice between web or app-
+   Easy accessibility, faster development & deployment, cost efficiency  n, Simpler Integration with APIs make it a better choice  for Prototype demonstration.
+
+7. Platform Architecture & Tech Stack
+
+Frontend - React.js
+Backend - Node.js + Express
+AI / ML - Python, Scikit-learn
+Database - MongoDB
+API - Weather data via OpenWeatherMap
+     Air quality monitoring via AQICN
+Payments - Razorpay (sandbox)
+
+8. (a) AI / ML Integration
+Machine learning models analyze:
+• Historical weather data
+• City-level disruption patterns
+• Seasonal trends
+This generates a risk score used for dynamic weekly premium pricing.
+
+(b)Fraud Detection
+  AI prevents false claims using:
+• GPS location validation
+• Delivery activity verification
+• Duplicate claim detection
+
+9. Application Workflow
+• Rider registers on the platform.
+• The system collects basic details such as location, delivery type, and working hours.
+• AI analyzes the data and calculates a risk score and weekly premium.
+• The rider selects and purchases a weekly insurance plan.
+• The platform continuously monitors environmental data (weather, pollution, etc.) using APIs.
+• If disruption thresholds are exceeded, a parametric trigger is automatically activated.
+• The system estimates the income lost during the disruption period.
+• An automatic payout is instantly transferred to the rider’s account.
+
+10. Development Plan
+Phase 1 – Ideation
+Research persona, choose our category, define disruption triggers for system, pricing model, searching the AI strategy, and noting down the tech stack.
+
+Phase 2 – Prototype
+Develop web interface, basic layout, integrate the APIs, simulate disruption triggers in the project.
+
+Phase 3 – AI & Automation
+Implement ML risk models, fraud detection, automated payout system, and analytics dashboard inthe project.
+
+11. Quick summary of features -
+Key Features are :
+• Optimized onboarding for delivery partners
+• Weekly subscription insurance model
+• AI-powered risk scoring and dynamic pricing
+• Real-time disruption monitoring
+• Automated parametric claim triggering
+• Intelligent fraud detection
+• Instant payout processing
+• Analytics dashboard for monitoring disruptions and payouts
 
 
 
