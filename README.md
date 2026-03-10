@@ -104,6 +104,10 @@ Key Features are :
 • Instant payout processing
 • Analytics dashboard for monitoring disruptions and payouts
 
+Architecture diagram
+![WhatsApp Image 2026-03-10 at 11 50 16 PM](https://github.com/user-attachments/assets/204aee94-86cc-4691-aff1-a4e94dc85e08)
+
+
 
 
 
