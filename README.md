@@ -236,22 +236,8 @@ gig-insurance-platform/
 - Referral program
 - Admin dashboard
 
-## 📝 License
 
-MIT License
-
-## 👥 Team
 
 Developed as part of AI-powered insurance platform for gig economy workers.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📞 Support
-
-For support, email support@rideshield.com or join our Slack channel.
-
----
 
 **Note**: This is a prototype demonstration. For production use, ensure proper API keys, security measures, and compliance with insurance regulations.
