@@ -1,116 +1,257 @@
-# AI POWERED INSURANCE FOR GIG ECONOMY
+# RideShield - AI-Powered Insurance for Gig Workers
 
-1. PROBLEM STATEMENT
-Platform-based delivery workers from companies like Zomato and Swiggy are a key part of India's digital economy. However, they frequently lose income due to external disruptions such as heavy rainfall, natural disasters, extreme heat, pollution, or local restrictions.
-These events can reduce their working hours and cause 20–30% loss in weekly income, while gig workers currently have no protection against such uncontrollable disruptions.
-This project proposes an AI-powered parametric insurance platform that automatically compensates delivery workers when such disruption events occur.
+An AI-enabled parametric insurance platform that automatically compensates delivery workers when disruption events occur (heavy rainfall, extreme heat, pollution, or local restrictions).
 
-Target Persona- Food Delivery Riders (Delivery partners working with Zomato and Swiggy )
+## 🎯 Problem Statement
 
-2. PERSONA BASED REAL TIME SCENARIO -
-Ishan usually works 8 hours per day and earns around ₹100–₹120 per hour from deliveries.One evening, heavy rainfall (>50 mm) occurs in his area, which forces restaurants to close early and roads to flood. Ishan is unable to work for 4 hours, resulting in an income loss of about ₹480.
+Platform-based delivery workers from companies like Zomato and Swiggy frequently lose income due to external disruptions such as:
+- Heavy rainfall and natural disasters
+- Extreme heat
+- Severe pollution
+- Local restrictions and curfews
 
-Solution of the Scenario
-Ishan had subscribed to the platform’s ₹30 weekly insurance plan earlier.The system continuously monitors weather data using APIs. When the rainfall threshold is crossed, a parametric trigger activates automatically.
-The platform verifies Ishan’s location and delivery activity to prevent fraud.
-The system calculates Ishan’s estimated lost income and instantly transfers the payout (₹480) to his digital wallet or bank account.
-This ensures Ishan receives financial protection without filing any manual claim. 
+These events can cause 20-30% loss in weekly income, while gig workers currently have no protection against such uncontrollable disruptions.
 
-Our Solution
-We propose an AI-enabled parametric insurance platform that:
-• Provides weekly subscription insurance plans
-• Monitors real-time disruption data (weather, pollution, etc.)
-• Automatically triggers claims when conditions are met
-• Instantly pays compensation for lost income
-No manual claim filing is required.
+## 💡 Solution
 
-3. Parametric Disruption Triggers
-The system continuously monitors external conditions.
-Disruption	Trigger
-Heavy Rain	Rainfall > 50 mm
-Extreme Heat	Temperature > 42°C
-Severe Pollution	AQI > 400
-Curfew / Local Restrictions	Government restrictions
-When these thresholds are crossed, the system automatically triggers compensation.
+RideShield provides:
+- Weekly subscription insurance plans
+- Real-time disruption monitoring (weather, pollution, etc.)
+- Automatic claim triggering when conditions are met
+- Instant compensation for lost income
+- No manual claim filing required
 
+## 🏗️ Architecture
 
-Weekly Pricing Model
+### Frontend
+- React.js with modern UI/UX
+- Real-time weather monitoring dashboard
+- Responsive design with gradient themes
+- Interactive charts and statistics
 
-The insurance follows a weekly subscription model aligned with gig worker earning cycles.
-Plan	    Weekly Premium	    Max Weekly Payout
-Basic	          ₹20	              ₹500
-Standard	      ₹30	              ₹750
-Premium	        ₹40	              ₹1000
+### Backend
+- Node.js + Express
+- MongoDB for data storage
+- RESTful API architecture
+- Automated cron jobs for weather monitoring
 
-Example
-If rainfall stops deliveries for 4 hours:
-Lost Income = 4 × ₹120 = ₹480
-The system automatically pays ₹480 to the rider.
+### AI/ML
+- Python-based risk scoring model
+- Historical weather data analysis
+- Fraud detection algorithms
 
-4.   Justifying choice between web or app-
-   Easy accessibility, faster development & deployment, cost efficiency  n, Simpler Integration with APIs make it a better choice  for Prototype demonstration.
+## 📋 Parametric Triggers
 
-7. Platform Architecture & Tech Stack
+| Disruption | Trigger Threshold |
+|------------|------------------|
+| Heavy Rain | Rainfall > 50 mm |
+| Extreme Heat | Temperature > 42°C |
+| Severe Pollution | AQI > 400 |
+| Curfew/Restrictions | Government restrictions |
 
-Frontend - React.js
-Backend - Node.js + Express
-AI / ML - Python, Scikit-learn
-Database - MongoDB
-API - Weather data via OpenWeatherMap
-     Air quality monitoring via AQICN
-Payments - Razorpay (sandbox)
+## 💰 Pricing Plans
 
-8. (a) AI / ML Integration
-Machine learning models analyze:
-• Historical weather data
-• City-level disruption patterns
-• Seasonal trends
-This generates a risk score used for dynamic weekly premium pricing.
+| Plan | Weekly Premium | Max Weekly Payout |
+|------|---------------|-------------------|
+| Basic | ₹199 | ₹500 |
+| Standard | ₹299 | ₹750 |
+| Premium | ₹399 | ₹1000 |
 
-(b)Fraud Detection
-  AI prevents false claims using:
-• GPS location validation
-• Delivery activity verification
-• Duplicate claim detection
+## 🚀 Getting Started
 
-9. Application Workflow
-• Rider registers on the platform.
-• The system collects basic details such as location, delivery type, and working hours.
-• AI analyzes the data and calculates a risk score and weekly premium.
-• The rider selects and purchases a weekly insurance plan.
-• The platform continuously monitors environmental data (weather, pollution, etc.) using APIs.
-• If disruption thresholds are exceeded, a parametric trigger is automatically activated.
-• The system estimates the income lost during the disruption period.
-• An automatic payout is instantly transferred to the rider’s account.
+### Prerequisites
 
-10. Development Plan
-Phase 1 – Ideation
-Research persona, choose our category, define disruption triggers for system, pricing model, searching the AI strategy, and noting down the tech stack.
+- Node.js (v14 or higher)
+- MongoDB (local or Atlas)
+- npm or yarn
 
-Phase 2 – Prototype
-Develop web interface, basic layout, integrate the APIs, simulate disruption triggers in the project.
+### Installation
 
-Phase 3 – AI & Automation
-Implement ML risk models, fraud detection, automated payout system, and analytics dashboard inthe project.
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd gig-insurance-platform
+```
 
-11. Quick summary of features -
-Key Features are :
-• Optimized onboarding for delivery partners
-• Weekly subscription insurance model
-• AI-powered risk scoring and dynamic pricing
-• Real-time disruption monitoring
-• Automated parametric claim triggering
-• Intelligent fraud detection
-• Instant payout processing
-• Analytics dashboard for monitoring disruptions and payouts
+2. Install all dependencies
+```bash
+npm run install-all
+```
 
-Architecture diagram
-![WhatsApp Image 2026-03-10 at 11 50 16 PM](https://github.com/user-attachments/assets/204aee94-86cc-4691-aff1-a4e94dc85e08)
+This will install dependencies for both frontend and backend.
 
+### Configuration
 
+1. Create a `.env` file in the `backend` directory:
+```bash
+cd backend
+cp .env.example .env
+```
 
+2. Update the `.env` file with your credentials:
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/gig-insurance
+OPENWEATHER_API_KEY=your_api_key_here
+AQICN_API_KEY=your_api_key_here
+```
 
+### Running the Application
 
+#### Option 1: Run Everything Together (Recommended)
+```bash
+npm start
+```
 
+This will start both frontend and backend concurrently:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:5000
 
+#### Option 2: Run Separately
 
+**Backend:**
+```bash
+cd backend
+npm start
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm start
+```
+
+## 📱 Application Workflow
+
+1. **Registration**: Rider registers with basic details (name, phone, city, working hours)
+2. **Risk Assessment**: AI analyzes data and calculates risk score
+3. **Plan Selection**: Rider selects and purchases a weekly insurance plan
+4. **Monitoring**: Platform continuously monitors environmental data via APIs
+5. **Auto Trigger**: When disruption thresholds are exceeded, claims activate automatically
+6. **Payout**: System estimates lost income and transfers payout instantly
+
+## 🎨 Features
+
+### For Riders
+- Simple onboarding process
+- Real-time weather monitoring dashboard
+- Automatic claim processing
+- Instant payout notifications
+- Weekly subscription model
+- No manual paperwork
+
+### For Platform
+- AI-powered risk scoring
+- Fraud detection system
+- Automated payout processing
+- Analytics dashboard
+- Scalable architecture
+
+## 🔌 API Endpoints
+
+### Riders
+- `POST /api/riders/register` - Register new rider
+- `GET /api/riders/phone/:phone` - Get rider by phone
+- `GET /api/riders` - Get all active riders
+- `PUT /api/riders/:id/plan` - Update insurance plan
+
+### Weather
+- `GET /api/weather/current/:city` - Get current weather data
+- `GET /api/weather/check-triggers` - Check triggers for all riders
+
+### Payouts
+- `GET /api/payouts/rider/:riderId` - Get rider's payout history
+- `GET /api/payouts/stats/:riderId` - Get payout statistics
+- `POST /api/payouts/create` - Create manual payout (testing)
+
+## 🧪 Testing
+
+### Test the Weather Monitoring
+```bash
+curl http://localhost:5000/api/weather/current/Mumbai
+```
+
+### Test Trigger System
+```bash
+curl http://localhost:5000/api/weather/check-triggers
+```
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React.js, React Router, Recharts, Lucide Icons |
+| Backend | Node.js, Express.js |
+| Database | MongoDB |
+| AI/ML | Python, Scikit-learn |
+| APIs | OpenWeatherMap, AQICN |
+| Payments | Razorpay (sandbox) |
+
+## 📊 Project Structure
+
+```
+gig-insurance-platform/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── HomePage.js
+│   │   │   ├── RegisterPage.js
+│   │   │   ├── SelectPlanPage.js
+│   │   │   └── DashboardPage.js
+│   │   ├── App.js
+│   │   └── index.js
+│   └── package.json
+├── backend/
+│   ├── models/
+│   │   ├── Rider.js
+│   │   └── Payout.js
+│   ├── routes/
+│   │   ├── riders.js
+│   │   ├── weather.js
+│   │   └── payouts.js
+│   ├── server.js
+│   └── package.json
+├── ml-model/
+│   └── risk_model.py
+└── package.json
+```
+
+## 🔐 Security Features
+
+- Phone number validation
+- Duplicate registration prevention
+- GPS location validation (planned)
+- Delivery activity verification (planned)
+- Fraud detection algorithms
+
+## 🌟 Future Enhancements
+
+- Mobile app (React Native)
+- Real API integration (OpenWeatherMap, AQICN)
+- Payment gateway integration (Razorpay)
+- Advanced ML models for risk prediction
+- Multi-language support
+- Push notifications
+- Referral program
+- Admin dashboard
+
+## 📝 License
+
+MIT License
+
+## 👥 Team
+
+Developed as part of AI-powered insurance platform for gig economy workers.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📞 Support
+
+For support, email support@rideshield.com or join our Slack channel.
+
+---
+
+**Note**: This is a prototype demonstration. For production use, ensure proper API keys, security measures, and compliance with insurance regulations.

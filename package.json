@@ -1,0 +1,19 @@
+{
+  "name": "gig-insurance-platform",
+  "version": "1.0.0",
+  "description": "AI-powered parametric insurance for gig delivery workers",
+  "main": "backend/server.js",
+  "scripts": {
+    "install-all": "npm install && cd frontend && npm install",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && node server.js",
+    "client": "cd frontend && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": ["insurance", "gig-workers", "parametric"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
