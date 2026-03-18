@@ -7,34 +7,48 @@ import './DashboardPage.css';
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [insuranceData, setInsuranceData] = useState(null);
-  const [weatherData, setWeatherData] = useState({
-    rainfall: 12,
-    temperature: 35,
-    aqi: 180
-  });
+  const [weatherData, setWeatherData] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherSource, setWeatherSource] = useState('');
   const [payoutHistory] = useState([
     { date: '2026-03-08', amount: 450, reason: 'Heavy Rainfall', status: 'completed' },
     { date: '2026-03-05', amount: 300, reason: 'Extreme Heat', status: 'completed' },
     { date: '2026-03-01', amount: 400, reason: 'Local Shutdown', status: 'completed' }
   ]);
 
+  const fetchWeather = async (city) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/weather/current/${encodeURIComponent(city)}`);
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      setWeatherData(data);
+      setWeatherSource(data.source);
+    } catch (err) {
+      // fallback to simulated data if backend is offline
+      setWeatherData({
+        rainfall:    Math.floor(Math.random() * 60),
+        temperature: 30 + Math.floor(Math.random() * 15),
+        aqi:         100 + Math.floor(Math.random() * 350),
+        humidity:    65,
+        windSpeed:   14,
+        description: 'Partly cloudy',
+        feelsLike:   34,
+      });
+      setWeatherSource('simulated');
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
   useEffect(() => {
     const data = localStorage.getItem('insuranceData');
-    if (!data) {
-      navigate('/register');
-      return;
-    }
-    setInsuranceData(JSON.parse(data));
+    if (!data) { navigate('/register'); return; }
+    const parsed = JSON.parse(data);
+    setInsuranceData(parsed);
 
-    // Simulate real-time weather updates
-    const interval = setInterval(() => {
-      setWeatherData({
-        rainfall: Math.floor(Math.random() * 60),
-        temperature: 30 + Math.floor(Math.random() * 15),
-        aqi: 100 + Math.floor(Math.random() * 300)
-      });
-    }, 8000);
-
+    fetchWeather(parsed.city);
+    // Refresh every 10 minutes
+    const interval = setInterval(() => fetchWeather(parsed.city), 10 * 60 * 1000);
     return () => clearInterval(interval);
   }, [navigate]);
 
@@ -45,7 +59,7 @@ const DashboardPage = () => {
     { name: 'Instant Payouts', value: 90, color: '#ff6b35' }
   ];
 
-  const isDisruption = weatherData.rainfall > 50 || weatherData.temperature > 42 || weatherData.aqi > 400;
+  const isDisruption = weatherData && (weatherData.rainfall > 50 || weatherData.temperature > 42 || weatherData.aqi > 400);
   const totalPayouts = payoutHistory.reduce((sum, p) => sum + p.amount, 0);
 
   if (!insuranceData) return null;
@@ -166,63 +180,75 @@ const DashboardPage = () => {
         {/* Environmental Monitoring */}
         <div className="monitoring-section">
           <h2>Real-Time Environmental Monitoring</h2>
-          <p className="section-subtitle">Live conditions in {insuranceData.city}</p>
-          
-          <div className="monitoring-grid">
-            <div className="monitor-card">
-              <div className="monitor-icon rainfall">
-                <CloudRain size={32} />
-              </div>
-              <div className="monitor-content">
-                <span className="monitor-label">Rainfall</span>
-                <span className="monitor-value">{weatherData.rainfall} mm</span>
-                <span className="monitor-threshold">Threshold: 50mm</span>
-              </div>
-              <div className="monitor-status">
-                {weatherData.rainfall > 50 ? (
-                  <span className="status-badge danger">Alert</span>
-                ) : (
-                  <span className="status-badge safe">Safe</span>
-                )}
-              </div>
-            </div>
+          <p className="section-subtitle">
+            Live conditions in {insuranceData.city}
+            {weatherSource === 'live' && <span className="live-badge">● LIVE</span>}
+            {weatherSource === 'simulated' && <span className="sim-badge">⚠ Simulated</span>}
+          </p>
 
-            <div className="monitor-card">
-              <div className="monitor-icon temperature">
-                <Thermometer size={32} />
-              </div>
-              <div className="monitor-content">
-                <span className="monitor-label">Temperature</span>
-                <span className="monitor-value">{weatherData.temperature}°C</span>
-                <span className="monitor-threshold">Threshold: 42°C</span>
-              </div>
-              <div className="monitor-status">
-                {weatherData.temperature > 42 ? (
-                  <span className="status-badge danger">Alert</span>
-                ) : (
-                  <span className="status-badge safe">Safe</span>
-                )}
-              </div>
-            </div>
+          {weatherLoading ? (
+            <div className="weather-loading">Fetching live weather data...</div>
+          ) : (
+            <>
+              <div className="monitoring-grid">
+                <div className="monitor-card">
+                  <div className="monitor-icon rainfall">
+                    <CloudRain size={32} />
+                  </div>
+                  <div className="monitor-content">
+                    <span className="monitor-label">Rainfall</span>
+                    <span className="monitor-value">{weatherData.rainfall} mm</span>
+                    <span className="monitor-threshold">Threshold: 50mm</span>
+                  </div>
+                  <div className="monitor-status">
+                    {weatherData.rainfall > 50
+                      ? <span className="status-badge danger">Alert</span>
+                      : <span className="status-badge safe">Safe</span>}
+                  </div>
+                </div>
 
-            <div className="monitor-card">
-              <div className="monitor-icon aqi">
-                <Wind size={32} />
+                <div className="monitor-card">
+                  <div className="monitor-icon temperature">
+                    <Thermometer size={32} />
+                  </div>
+                  <div className="monitor-content">
+                    <span className="monitor-label">Temperature</span>
+                    <span className="monitor-value">{weatherData.temperature}°C</span>
+                    <span className="monitor-threshold">
+                      Feels like {weatherData.feelsLike}°C · Humidity {weatherData.humidity}%
+                    </span>
+                  </div>
+                  <div className="monitor-status">
+                    {weatherData.temperature > 42
+                      ? <span className="status-badge danger">Alert</span>
+                      : <span className="status-badge safe">Safe</span>}
+                  </div>
+                </div>
+
+                <div className="monitor-card">
+                  <div className="monitor-icon aqi">
+                    <Wind size={32} />
+                  </div>
+                  <div className="monitor-content">
+                    <span className="monitor-label">Air Quality</span>
+                    <span className="monitor-value">AQI {weatherData.aqi}</span>
+                    <span className="monitor-threshold">Wind: {weatherData.windSpeed} km/h · PM2.5: {weatherData.pm25} µg/m³</span>
+                  </div>
+                  <div className="monitor-status">
+                    {weatherData.aqi > 200
+                      ? <span className="status-badge danger">Alert</span>
+                      : <span className="status-badge safe">Safe</span>}
+                  </div>
+                </div>
               </div>
-              <div className="monitor-content">
-                <span className="monitor-label">Air Quality</span>
-                <span className="monitor-value">AQI {weatherData.aqi}</span>
-                <span className="monitor-threshold">Threshold: 400</span>
-              </div>
-              <div className="monitor-status">
-                {weatherData.aqi > 400 ? (
-                  <span className="status-badge danger">Alert</span>
-                ) : (
-                  <span className="status-badge safe">Safe</span>
-                )}
-              </div>
-            </div>
-          </div>
+
+              {weatherData.description && (
+                <p className="weather-description">
+                  🌤 {weatherData.description.charAt(0).toUpperCase() + weatherData.description.slice(1)} in {insuranceData.city}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Payout History */}

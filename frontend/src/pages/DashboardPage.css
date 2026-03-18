@@ -1,6 +1,6 @@
 .dashboard-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+  background: transparent;
 }
 
 .dashboard-container {
@@ -112,10 +112,12 @@
 }
 
 .stat-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -179,10 +181,12 @@
 }
 
 .right-column {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .chart-container {
@@ -214,14 +218,16 @@
 }
 
 .monitor-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   gap: 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid rgba(255, 255, 255, 0.6);
   transition: all 0.3s;
 }
 
@@ -301,10 +307,12 @@
 
 /* History Section */
 .history-section {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .history-section h2 {
@@ -324,13 +332,13 @@
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
-  background: #f7fafc;
+  background: rgba(247, 250, 252, 0.7);
   border-radius: 12px;
   transition: all 0.2s;
 }
 
 .history-item:hover {
-  background: #edf2f7;
+  background: rgba(237, 242, 247, 0.85);
   transform: translateX(5px);
 }
 
@@ -387,4 +395,41 @@
   .dashboard-container {
     padding-top: 5rem;
   }
+}
+
+/* Live weather badges */
+.live-badge {
+  margin-left: 0.75rem;
+  color: #22c55e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  animation: pulse 2s infinite;
+}
+
+.sim-badge {
+  margin-left: 0.75rem;
+  color: #f59e0b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.weather-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #718096;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.6);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.weather-description {
+  margin-top: 1rem;
+  color: #4a5568;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.55);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
 }

@@ -1,6 +1,6 @@
 .select-plan-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+  background: transparent;
 }
 
 .plan-container {
@@ -33,10 +33,12 @@
 }
 
 .plan-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   padding: 2.5rem;
   border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 3px solid transparent;
   cursor: pointer;
   transition: all 0.3s;
