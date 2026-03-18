@@ -10,10 +10,16 @@
     "client": "cd frontend && npm start",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
-  "keywords": ["insurance", "gig-workers", "parametric"],
+  "keywords": [
+    "insurance",
+    "gig-workers",
+    "parametric"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "react-tsparticles": "^2.12.2",
+    "tsparticles": "^3.9.1"
   }
 }

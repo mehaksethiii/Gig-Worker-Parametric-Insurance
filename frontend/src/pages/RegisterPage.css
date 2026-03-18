@@ -1,163 +1,258 @@
-.register-page {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f0f4f8 0%, #ffffff 100%);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.register-container {
+.register-page {
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: transparent;
+}
+
+/* Navbar — identical to homepage */
+.register-page .navbar {
+  background: linear-gradient(135deg, #8755c5 0%, #e63ddd 100%);
+  padding: 1rem 0;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 20px rgba(135, 85, 197, 0.35);
+}
+
+.register-page .nav-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 6rem 2rem 2rem;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.register-page .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.register-page .logo:hover {
+  opacity: 0.85;
+}
+
+/* Page body */
+.register-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 7rem 2rem 4rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 3rem;
   align-items: start;
 }
 
+/* Form card */
 .register-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   padding: 3rem;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  animation: fadeSlideUp 0.5s ease both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .register-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.2rem;
 }
 
 .register-header h1 {
-  font-size: 2.5rem;
+  font-size: 2.4rem;
+  font-weight: 800;
   color: #1e3a5f;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
 }
 
 .register-header p {
   color: #718096;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
+/* Form */
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.4rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .form-group label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   font-weight: 600;
-  color: #1e3a5f;
-  font-size: 0.95rem;
+  color: #8755c5;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
 }
 
 .form-group input,
 .form-group select {
-  padding: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  border: 2px solid #e8eaf6;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: all 0.3s;
+  color: #2d3748;
+  background: rgba(255, 255, 255, 0.9);
+  transition: border-color 0.25s, box-shadow 0.25s;
+  appearance: auto;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #8755c5;
+  box-shadow: 0 0 0 3px rgba(135, 85, 197, 0.12);
+  background: white;
+}
+
+.form-group input::placeholder {
+  color: #b0bec5;
 }
 
 .btn-submit {
   background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
   color: white;
   border: none;
-  padding: 1.2rem;
-  border-radius: 10px;
+  padding: 1.1rem;
+  border-radius: 12px;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s;
-  margin-top: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 0.5rem;
+  letter-spacing: 0.02em;
 }
 
 .btn-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.35);
 }
 
 .register-footer {
   text-align: center;
-  margin-top: 1.5rem;
-  color: #718096;
+  margin-top: 1.4rem;
+  color: #a0aec0;
+  font-size: 0.95rem;
 }
 
 .register-footer span {
-  color: #667eea;
+  color: #8755c5;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.2s;
 }
 
 .register-footer span:hover {
+  opacity: 0.75;
   text-decoration: underline;
 }
 
-/* Illustration Side */
+/* Illustration / benefits panel */
 .register-illustration {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 3rem;
-  border-radius: 20px;
+  background: linear-gradient(145deg, #667eea 0%, #8755c5 50%, #764ba2 100%);
+  padding: 3rem 2.5rem;
+  border-radius: 24px;
   color: white;
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+  position: sticky;
+  top: 7rem;
+  animation: fadeSlideUp 0.5s 0.15s ease both;
 }
 
 .illustration-content h2 {
-  font-size: 2rem;
+  font-size: 1.9rem;
+  font-weight: 800;
   margin-bottom: 2rem;
+  letter-spacing: -0.3px;
 }
 
 .benefit-list {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.6rem;
 }
 
 .benefit-item {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   gap: 1rem;
 }
 
 .benefit-icon {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
   flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
 }
 
 .benefit-item h3 {
-  font-size: 1.3rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
 }
 
 .benefit-item p {
-  opacity: 0.9;
-  font-size: 0.95rem;
+  opacity: 0.85;
+  font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
+/* Decorative bottom strip on illustration */
+.register-illustration::after {
+  content: '';
+  display: block;
+  margin-top: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,107,53,0.8), rgba(255,255,255,0.3));
+}
+
+/* Responsive */
+@media (max-width: 900px) {
   .register-container {
     grid-template-columns: 1fr;
-    padding-top: 5rem;
+    padding-top: 5.5rem;
+    gap: 2rem;
+  }
+
+  .register-illustration {
+    position: static;
+    order: -1;
   }
 
   .register-card {
@@ -166,9 +261,5 @@
 
   .register-header h1 {
     font-size: 2rem;
-  }
-
-  .register-illustration {
-    order: -1;
   }
 }

@@ -1,13 +1,54 @@
-import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, FileCheck, Wallet, TrendingUp, X } from 'lucide-react';
+import { Shield, FileCheck, Wallet, TrendingUp, X, Bike, Package, MapPin, Navigation, CloudRain, Sun } from 'lucide-react';
 import './HomePage.css';
+import React, { useState, useEffect } from 'react';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const fullText = "Protecting Gig Workers from Income Loss";
+  const [displayText, setDisplayText] = useState("");
+
+  useEffect(() => {
+    // Scroll Animation Observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('slide-up');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    const elementsToAnimate = document.querySelectorAll(
+      '.card, .hero-title, .hero-subtitle, .hero-buttons, .hero-badge, .how-it-works h2, .pricing-banner, .dashboard-stats, .preview-right'
+    );
+    
+    elementsToAnimate.forEach((el, index) => {
+      el.style.opacity = '0'; // Ensure they are hidden before animation kicks in
+      observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let i = 0;
+
+    const interval = setInterval(() => {
+      setDisplayText(fullText.slice(0, i + 1));
+      i++;
+
+      if (i === fullText.length) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
+
     <div className="home-page">
       {/* Video Modal */}
       {showVideoModal && (
@@ -40,17 +81,18 @@ const HomePage = () => {
         </div>
       </nav>
 
+
       {/* Hero Section */}
-      <section 
-        className="hero-section"
-        style={{
-          backgroundImage: `url(${process.env.PUBLIC_URL}/hero-delivery-rider.jpg.jpeg)`
-        }}
-      >
+      <section className="hero-section">
         <div className="hero-content">
-          <h1>
-            Protecting Gig <span className="highlight">Workers</span><br />
-            from <span className="highlight">Income Loss</span>
+          <h1 className="hero-title">
+            <span className="hover-word">Protecting</span>{" "}
+            <span className="hover-word">Gig</span>{" "}
+            <span className="hover-word highlight">Workers</span>
+            <br />
+            <span className="hover-word">from</span>{" "}
+            <span className="hover-word highlight">Income</span>{" "}
+            <span className="hover-word highlight">Loss</span>
           </h1>
           <p className="hero-subtitle">
             Instant Insurance Payouts for Delivery Drivers During Disruptions
@@ -72,10 +114,11 @@ const HomePage = () => {
         </div>
       </section>
 
+
       {/* Features Cards */}
       <section className="features-section">
-        <div className="feature-card">
-          <div 
+        <div className="feature-card card">
+          <div
             className="feature-icon weather with-bg-image"
             style={{
               backgroundImage: `url(${process.env.PUBLIC_URL}/weather-disruption.jpg.jpeg)`,
@@ -88,8 +131,8 @@ const HomePage = () => {
           <h3>Weather Disruption</h3>
           <p>Protected during extreme heat, rain & floods</p>
         </div>
-        <div className="feature-card">
-          <div 
+        <div className="feature-card card">
+          <div
             className="feature-icon shutdown with-bg-image"
             style={{
               backgroundImage: `url(${process.env.PUBLIC_URL}/market-shutdown.jpg.jpeg)`,
@@ -102,8 +145,8 @@ const HomePage = () => {
           <h3>Local Shutdowns</h3>
           <p>Covered for curfews, strikes, & zone closures</p>
         </div>
-        <div className="feature-card">
-          <div 
+        <div className="feature-card card">
+          <div
             className="feature-icon payout with-bg-image"
             style={{
               backgroundImage: `url(${process.env.PUBLIC_URL}/automatic-payouts.jpg.jpeg)`,
@@ -122,9 +165,9 @@ const HomePage = () => {
       <section className="how-it-works" id="how-it-works">
         <h2>How RideShield Works</h2>
         <div className="steps-container">
-          <div className="step-card">
+          <div className="step-card card">
             <div className="step-number" style={{ display: 'none' }}>1</div>
-            <div 
+            <div
               className="step-icon with-image"
               style={{
                 backgroundImage: `url(${process.env.PUBLIC_URL}/smart-risk-monitoring.jpg.jpeg)`,
@@ -139,9 +182,9 @@ const HomePage = () => {
             <h3>Smart Risk Monitoring</h3>
             <p>AI tracks weather & local alerts</p>
           </div>
-          <div className="step-card">
+          <div className="step-card card">
             <div className="step-number" style={{ display: 'none' }}>2</div>
-            <div 
+            <div
               className="step-icon with-image"
               style={{
                 backgroundImage: `url(${process.env.PUBLIC_URL}/auto-claim-activation.jpg.jpeg)`,
@@ -156,9 +199,9 @@ const HomePage = () => {
             <h3>Auto Claim Activation</h3>
             <p>Disruption detected? Your claim starts live</p>
           </div>
-          <div className="step-card">
+          <div className="step-card card">
             <div className="step-number" style={{ display: 'none' }}>3</div>
-            <div 
+            <div
               className="step-icon with-image"
               style={{
                 backgroundImage: `url(${process.env.PUBLIC_URL}/instant-payout.jpg.jpeg)`,
@@ -238,10 +281,10 @@ const HomePage = () => {
           <h3>Income Protection Overview</h3>
           <div className="chart-placeholder">
             <div className="chart-bars">
-              <div className="bar" style={{height: '60%'}}><span>Heavy Rain</span></div>
-              <div className="bar" style={{height: '80%'}}><span>Shutdown</span></div>
-              <div className="bar" style={{height: '40%'}}><span>Normal</span></div>
-              <div className="bar" style={{height: '90%'}}><span>Instant Payouts</span></div>
+              <div className="bar" style={{ height: '60%' }}><span>Heavy Rain</span></div>
+              <div className="bar" style={{ height: '80%' }}><span>Shutdown</span></div>
+              <div className="bar" style={{ height: '40%' }}><span>Normal</span></div>
+              <div className="bar" style={{ height: '90%' }}><span>Instant Payouts</span></div>
             </div>
           </div>
         </div>
