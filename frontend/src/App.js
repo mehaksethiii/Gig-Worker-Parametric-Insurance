@@ -379,8 +379,10 @@ function App() {
     return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
   }, []);
 
+  const basename = process.env.PUBLIC_URL || '';
+
   return (
-    <Router>
+    <Router basename={basename}>
       <div className="cursor-glow" ref={glowRef}/>
       <div className="bg-canvas" aria-hidden="true">
         <Sky/>
