@@ -72,8 +72,8 @@ async function runSettlement(payout, rider) {
       await payout.save();
       return { success: false, reason };
     }
-    if (todayPayouts >= 1) {
-      const reason = `Daily claim limit reached (1 per day). Next claim available tomorrow.`;
+    if (todayPayouts >= 2) {
+      const reason = `Daily claim limit reached (2 per day). Next claim available tomorrow.`;
       addStep(payout, 'eligibility_check', 'failed', reason);
       payout.status = 'failed'; payout.failureReason = reason;
       await payout.save();

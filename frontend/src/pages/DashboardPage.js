@@ -174,6 +174,41 @@ const OTPVerifyPopup = ({ pending, onVerified, onCancel }) => {
 
 const PayoutReceiptPopup = ({ receipt, onClose }) => {
   if (!receipt) return null;
+
+  // Daily limit reached screen
+  if (receipt.limitReached) {
+    return (
+      <div className="payout-receipt-overlay" onClick={onClose}>
+        <div className="payout-receipt-modal" onClick={e => e.stopPropagation()}>
+          <div className="prm-header" style={{ background: 'linear-gradient(135deg,#c53030,#9b2c2c)' }}>
+            <div className="prm-check">🚫</div>
+            <h2>Daily Limit Reached</h2>
+            <p>Maximum 2 claims per day</p>
+          </div>
+          <div className="prm-body">
+            <div style={{ background:'#fff5f5', border:'1.5px solid #fc8181', borderRadius:'12px', padding:'1.2rem', marginBottom:'1rem' }}>
+              <p style={{ margin:0, fontWeight:700, color:'#c53030', fontSize:'1rem' }}>⚠️ Fair Usage Policy</p>
+              <p style={{ margin:'0.6rem 0 0', color:'#2d3748', fontSize:'0.88rem', lineHeight:1.7 }}>
+                RideShield allows a maximum of <strong>2 claims per day</strong> per rider to ensure fair coverage for all gig workers in the system.
+              </p>
+            </div>
+            <div className="prm-rows">
+              <div className="prm-row"><span>Claims used today</span><strong style={{color:'#c53030'}}>{receipt.claimsToday} / 2</strong></div>
+              <div className="prm-row"><span>Resets at</span><strong>Midnight tonight</strong></div>
+              <div className="prm-row"><span>Next claim available</span><strong style={{color:'#48bb78'}}>Tomorrow</strong></div>
+              <div className="prm-row"><span>Weekly max payouts</span><strong>As per your plan</strong></div>
+            </div>
+            <p style={{ fontSize:'0.8rem', color:'#718096', marginTop:'1rem', textAlign:'center' }}>
+              If you believe this is an error, contact RideShield support.
+            </p>
+          </div>
+          <div className="prm-actions">
+            <button className="prm-btn-close" onClick={onClose}>Got it</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="payout-receipt-overlay" onClick={onClose}>
       <div className="payout-receipt-modal" onClick={e => e.stopPropagation()}>
@@ -498,12 +533,23 @@ const DashboardPage = () => {
   const triggerPayout = React.useCallback(async (receiptData) => {
     const token = getToken();
 
-    // Frontend daily limit — max 1 claim per day
+    // Frontend daily limit — max 2 claims per day
     const today = new Date().toDateString();
     const lastClaimDate = localStorage.getItem('lastClaimDate');
-    if (lastClaimDate === today) {
-      addToast('⚠️ Daily limit reached — 1 payout per day. Come back tomorrow.', 'warning');
-      addNotification('⚠️ Daily claim limit reached — try again tomorrow', 'warning');
+    const claimsToday = lastClaimDate === today ? parseInt(localStorage.getItem('claimsToday') || '0') : 0;
+
+    if (claimsToday >= 2) {
+      addToast('🚫 Daily claim limit reached', 'warning');
+      addNotification(
+        `🚫 Daily Limit Reached — RideShield allows a maximum of 2 claims per day to ensure fair coverage for all riders. Your next claim will be available tomorrow at midnight. If you believe this is an error, contact support.`,
+        'warning'
+      );
+      // Show a proper modal message
+      setPayoutReceipt({
+        limitReached: true,
+        claimsToday,
+        resetTime: 'midnight tonight',
+      });
       return;
     }
 
@@ -538,8 +584,9 @@ const DashboardPage = () => {
     addNotification(`💰 ₹${receiptData.amount} payout sent — ${receiptData.reason}`, 'success');
     addToast(`💰 ₹${receiptData.amount} sent to ${receiptData.upiId || 'your UPI'}!`, 'success');
 
-    // Save today's date to enforce daily limit
+    // Save today's date and increment claim count
     localStorage.setItem('lastClaimDate', new Date().toDateString());
+    localStorage.setItem('claimsToday', String(claimsToday + 1));
 
     // 4. Show receipt directly — no OTP
     setPayoutReceipt(receiptData);
