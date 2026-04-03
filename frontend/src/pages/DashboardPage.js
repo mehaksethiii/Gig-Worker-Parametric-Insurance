@@ -80,6 +80,7 @@ export const downloadPayoutReceipt = ({ riderName, upiId, amount, reason, txnId,
 };
 
 // ── OTP Verification Popup (before payout is released) ───────────────────────
+// eslint-disable-next-line no-unused-vars
 const OTPVerifyPopup = ({ pending, onVerified, onCancel }) => {
   const [otp, setOtp] = React.useState('');
   const [sent, setSent] = React.useState(false);
@@ -884,6 +885,17 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
           addNotification(`🎙️ Voice claim: ${reasonLabels[reason]} — ₹${amount}`, 'success');
 
           setTimeout(() => {
+            // Check daily limit before approving
+            const claimsCount = getDailyClaimCount ? getDailyClaimCount() : 0;
+            if (claimsCount >= 2) {
+              const limitMsg = isHindi
+                ? 'Aapki aaj ki claim limit poori ho gayi hai. Kal dobara try karein. RideShield aapke saath hai.'
+                : 'Daily claim limit reached. You have already made 2 claims today. Please try again tomorrow.';
+              setVoiceResult(r => r ? { ...r, status: 'Limit Reached' } : r);
+              speakResponse(limitMsg, isHindi);
+              setPayoutReceipt({ limitReached: true, claimsToday: claimsCount });
+              return;
+            }
             setVoiceResult(r => r ? { ...r, status: 'Approved' } : r);
             speakResponse(approvedMsg, isHindi);
             // Show payout receipt popup
@@ -2206,6 +2218,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
     setStep('result');
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getGpsAndValidate = () => {
     setStep('locating'); setError('');
     const CITY_COORDS = { Mumbai:{lat:19.076,lon:72.877}, Delhi:{lat:28.613,lon:77.209}, Bangalore:{lat:12.971,lon:77.594}, Hyderabad:{lat:17.385,lon:78.486}, Chennai:{lat:13.082,lon:80.270}, Kolkata:{lat:22.572,lon:88.363}, Pune:{lat:18.520,lon:73.856} };
