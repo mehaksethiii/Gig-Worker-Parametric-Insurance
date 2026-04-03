@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Check, TrendingUp } from 'lucide-react';
+import { Shield, Check, TrendingUp, Download } from 'lucide-react';
 import { getToken, getRider, saveAuth } from '../auth';
 import './SelectPlanPage.css';
 
@@ -44,12 +44,69 @@ const TABS = [
   { id: 'advanced', label: '💎 Advanced' },
 ];
 
+// ── Load Razorpay script dynamically ─────────────────────────────────────────
+const loadRazorpay = () => new Promise(resolve => {
+  if (window.Razorpay) return resolve(true);
+  const script = document.createElement('script');
+  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  script.onload = () => resolve(true);
+  script.onerror = () => resolve(false);
+  document.body.appendChild(script);
+});
+
+// ── Generate & download receipt as HTML file ──────────────────────────────────
+const downloadReceipt = ({ riderName, plan, premium, paymentId, orderId, city, date }) => {
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>RideShield Payment Receipt</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; color: #2d3748; }
+    .header { background: linear-gradient(135deg,#1e3a5f,#2c5282); color: white; padding: 2rem; border-radius: 12px 12px 0 0; text-align: center; }
+    .header h1 { margin: 0; font-size: 1.8rem; } .header p { margin: 0.3rem 0 0; opacity: 0.8; }
+    .body { border: 1px solid #e2e8f0; border-top: none; padding: 2rem; border-radius: 0 0 12px 12px; }
+    .row { display: flex; justify-content: space-between; padding: 0.7rem 0; border-bottom: 1px solid #f0f0f0; }
+    .row:last-child { border-bottom: none; }
+    .label { color: #718096; font-size: 0.9rem; } .value { font-weight: 700; color: #1e3a5f; }
+    .success { background: #f0fff4; border: 1.5px solid #48bb78; border-radius: 8px; padding: 1rem; text-align: center; margin: 1.5rem 0; color: #276749; font-weight: 700; }
+    .footer { text-align: center; color: #a0aec0; font-size: 0.8rem; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="header"><h1>🛡️ RideShield</h1><p>Payment Receipt</p></div>
+  <div class="body">
+    <div class="success">✅ Payment Successful — Your coverage is now active!</div>
+    <div class="row"><span class="label">Rider Name</span><span class="value">${riderName}</span></div>
+    <div class="row"><span class="label">City</span><span class="value">${city}</span></div>
+    <div class="row"><span class="label">Plan Activated</span><span class="value">${plan} Plan</span></div>
+    <div class="row"><span class="label">Amount Paid</span><span class="value">₹${premium}</span></div>
+    <div class="row"><span class="label">Payment ID</span><span class="value">${paymentId}</span></div>
+    <div class="row"><span class="label">Order ID</span><span class="value">${orderId}</span></div>
+    <div class="row"><span class="label">Date & Time</span><span class="value">${date}</span></div>
+    <div class="row"><span class="label">Status</span><span class="value" style="color:#48bb78">✅ Confirmed</span></div>
+    <div class="footer">This is an auto-generated receipt from RideShield. Keep it for your records.<br/>We're here for you — rain or shine ❤️</div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `RideShield_Receipt_${paymentId}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const SelectPlanPage = () => {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState('standard');
   const [activeTab, setActiveTab] = useState('all');
   const [riskData, setRiskData] = useState(null);
   const [loadingRisk, setLoadingRisk] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [receipt, setReceipt] = useState(null); // stores last payment receipt data
 
   const riderData = getRider() || JSON.parse(localStorage.getItem('riderData') || '{}');
   const visiblePlans = activeTab === 'all' ? PLANS : PLANS.filter(p => p.category === activeTab);
@@ -66,14 +123,84 @@ const SelectPlanPage = () => {
     })
       .then(r => r.json()).then(d => setRiskData(d)).catch(() => setRiskData(null))
       .finally(() => setLoadingRisk(false));
-  }, [selectedPlan]);
+  }, [selectedPlan]); // eslint-disable-line
 
-  const handleSelectPlan = () => {
+  const handleSelectPlan = async () => {
     const plan = PLANS.find(p => p.id === selectedPlan);
+    const premium = riskData?.dynamicPremium || plan.price;
+
+    setPaying(true);
+
+    // Try Razorpay checkout
+    try {
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error('Razorpay failed to load');
+
+      // Create order on backend
+      const orderRes = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: premium, planName: plan.name }),
+      });
+      const orderData = await orderRes.json();
+
+      if (!orderData.success) throw new Error('Order creation failed');
+
+      // Open Razorpay checkout
+      await new Promise((resolve, reject) => {
+        const options = {
+          key:         orderData.keyId,
+          amount:      orderData.amount,
+          currency:    'INR',
+          name:        'RideShield',
+          description: `${plan.name} Plan — Weekly Insurance`,
+          order_id:    orderData.orderId,
+          prefill: {
+            name:    riderData.name  || '',
+            email:   riderData.email || '',
+            contact: riderData.phone || '',
+          },
+          theme: { color: plan.color },
+          handler: async (response) => {
+            // Verify payment
+            await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response),
+            });
+
+            // Save receipt data
+            const receiptData = {
+              riderName: riderData.name,
+              plan:      plan.name,
+              premium,
+              paymentId: response.razorpay_payment_id,
+              orderId:   response.razorpay_order_id,
+              city:      riderData.city,
+              date:      new Date().toLocaleString('en-IN'),
+            };
+            setReceipt(receiptData);
+            resolve(response);
+          },
+          modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
+        };
+        new window.Razorpay(options).open();
+      });
+
+    } catch (err) {
+      if (err.message !== 'Payment cancelled') {
+        console.warn('Razorpay unavailable, activating directly:', err.message);
+      } else {
+        setPaying(false);
+        return; // user cancelled
+      }
+    }
+
+    // Save plan (whether paid or direct)
     const insuranceData = {
       ...riderData,
       plan: plan.name,
-      premium: riskData?.dynamicPremium || plan.price,
+      premium,
       maxPayout: plan.maxPayout,
       riskScore: riskData?.riskScore || 70,
       riskLevel: riskData?.riskLevel || 'Medium',
@@ -84,10 +211,12 @@ const SelectPlanPage = () => {
       fetch('/api/auth/update-plan', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ plan: plan.name, premium: insuranceData.premium, maxPayout: plan.maxPayout }),
+        body: JSON.stringify({ plan: plan.name, premium, maxPayout: plan.maxPayout }),
       }).then(r => r.json()).then(d => { if (d.rider) saveAuth(token, d.rider); }).catch(() => {});
     }
-    navigate('/dashboard');
+
+    setPaying(false);
+    if (!receipt) navigate('/dashboard'); // navigate only if no receipt to show
   };
 
   const plan = PLANS.find(p => p.id === selectedPlan);
@@ -99,6 +228,34 @@ const SelectPlanPage = () => {
           <div className="logo" onClick={() => navigate('/')}><Shield size={32}/><span>RideShield</span></div>
         </div>
       </nav>
+
+      {/* ── Payment Success Receipt Modal ── */}
+      {receipt && (
+        <div className="receipt-overlay">
+          <div className="receipt-modal">
+            <div className="receipt-header">
+              <div className="receipt-check">✅</div>
+              <h2>Payment Successful!</h2>
+              <p>Your {receipt.plan} plan is now active</p>
+            </div>
+            <div className="receipt-body">
+              <div className="receipt-row"><span>Rider</span><strong>{receipt.riderName}</strong></div>
+              <div className="receipt-row"><span>Plan</span><strong>{receipt.plan}</strong></div>
+              <div className="receipt-row"><span>Amount Paid</span><strong style={{color:'#48bb78'}}>₹{receipt.premium}</strong></div>
+              <div className="receipt-row"><span>Payment ID</span><strong style={{fontSize:'0.8rem'}}>{receipt.paymentId}</strong></div>
+              <div className="receipt-row"><span>Date</span><strong>{receipt.date}</strong></div>
+            </div>
+            <div className="receipt-actions">
+              <button className="btn-download-receipt" onClick={() => downloadReceipt(receipt)}>
+                <Download size={16}/> Download Receipt
+              </button>
+              <button className="btn-go-dashboard" onClick={() => navigate('/dashboard')}>
+                Go to Dashboard →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="plan-container">
         <div className="plan-header">
@@ -115,7 +272,6 @@ const SelectPlanPage = () => {
         )}
         {loadingRisk && <div className="risk-loading">⚡ Calculating your AI risk score...</div>}
 
-        {/* Category Tabs */}
         <div className="plan-tabs">
           {TABS.map(t => (
             <button key={t.id} className={`plan-tab ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
@@ -158,10 +314,10 @@ const SelectPlanPage = () => {
         </div>
 
         <div className="plan-footer">
-          <button className="btn-continue" onClick={handleSelectPlan}>
-            Activate {plan?.icon} {plan?.name} Plan →
+          <button className="btn-continue" onClick={handleSelectPlan} disabled={paying}>
+            {paying ? '⏳ Processing...' : `Pay & Activate ${plan?.icon} ${plan?.name} Plan →`}
           </button>
-          <p className="plan-note">Cancel anytime · No hidden fees · Instant activation</p>
+          <p className="plan-note">Secured by Razorpay · Cancel anytime · No hidden fees</p>
         </div>
       </div>
     </div>

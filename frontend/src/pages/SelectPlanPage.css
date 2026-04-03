@@ -59,3 +59,21 @@
 
 @media (max-width: 1100px) { .plans-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px)  { .plans-grid { grid-template-columns: 1fr; } }
+
+/* Receipt Modal */
+.receipt-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.receipt-modal { background: white; border-radius: 20px; max-width: 460px; width: 100%; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: receiptPop 0.3s ease; }
+@keyframes receiptPop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.receipt-header { background: linear-gradient(135deg,#1e3a5f,#2c5282); color: white; padding: 2rem; text-align: center; }
+.receipt-check { font-size: 3rem; margin-bottom: 0.5rem; }
+.receipt-header h2 { margin: 0; font-size: 1.5rem; }
+.receipt-header p { margin: 0.3rem 0 0; opacity: 0.8; }
+.receipt-body { padding: 1.5rem 2rem; }
+.receipt-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.receipt-row:last-child { border-bottom: none; }
+.receipt-row span { color: #718096; }
+.receipt-actions { display: flex; gap: 0.8rem; padding: 1rem 2rem 1.5rem; }
+.btn-download-receipt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: #f7fafc; border: 1.5px solid #e2e8f0; color: #2d3748; padding: 0.8rem; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+.btn-download-receipt:hover { background: #edf2f7; }
+.btn-go-dashboard { flex: 1; background: linear-gradient(135deg,#667eea,#764ba2); color: white; border: none; padding: 0.8rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+.btn-go-dashboard:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }

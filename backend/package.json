@@ -16,7 +16,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.0.3",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.9"
+    "nodemailer": "^6.9.9",
+    "razorpay": "^2.9.2",
+    "razorpay": "^2.9.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
