@@ -775,7 +775,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     if (!riderInfo?.familyEmail || familyNotified) return;
     setFamilyNotified(true);
     try {
-      await fetch('/api/notify/family', {
+      const res = await fetch('/api/notify/family', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
