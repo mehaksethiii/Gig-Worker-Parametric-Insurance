@@ -4,21 +4,15 @@
   "description": "AI-powered parametric insurance for gig delivery workers",
   "icons": [
     {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
@@ -27,21 +21,13 @@
   "theme_color": "#1e3a5f",
   "background_color": "#1e3a5f",
   "categories": ["finance", "insurance", "productivity"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your insurance dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Report Disaster",
-      "short_name": "Report",
-      "description": "Report a disruption",
-      "url": "/dashboard",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }
