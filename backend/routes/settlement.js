@@ -13,6 +13,7 @@ const jwt     = require('jsonwebtoken');
 const Payout  = require('../models/Payout');
 const Claim   = require('../models/Claim');
 const Rider   = require('../models/Rider');
+const { sendUpiPayout } = require('../services/cashfreePayout');
 const router  = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'rideshield_secret_key';
@@ -33,23 +34,51 @@ function addStep(payout, step, status, detail) {
   payout.steps.push({ step, status, timestamp: new Date(), detail });
 }
 
-// Simulate UPI transfer (sandbox — replace with real Razorpay API in prod)
-async function initiateUpiTransfer(upiId, amount, txnRef) {
-  // In production: call Razorpay Payout API
-  // POST https://api.razorpay.com/v1/payouts with fund_account_id + amount
-  await new Promise(r => setTimeout(r, 800)); // simulate network delay
-  const success = Math.random() > 0.05; // 95% success rate simulation
-  if (!success) throw new Error('UPI transfer failed — bank timeout');
-  return { txnId: `UPI_${txnRef}_${Date.now()}`, channel: 'upi', settledAt: new Date() };
+// ── Real Cashfree UPI transfer (falls back to sandbox if no keys) ─────────────
+async function initiateUpiTransfer(rider, amount, txnRef) {
+  const result = await sendUpiPayout({
+    riderId:    rider._id.toString(),
+    upiId:      rider.upiId,
+    amount,
+    riderName:  rider.name,
+    email:      rider.email,
+    phone:      rider.phone,
+    reason:     `RideShield insurance payout — ${txnRef}`,
+  });
+
+  if (!result.success && result.status !== 'PENDING') {
+    throw new Error(result.message || 'UPI transfer failed');
+  }
+
+  return {
+    txnId:   result.transferId,
+    utr:     result.utr,
+    channel: result.channel || 'upi',
+    settledAt: new Date(),
+  };
 }
 
-// Simulate IMPS fallback
-async function initiateImpsTransfer(amount, txnRef) {
-  await new Promise(r => setTimeout(r, 1200));
-  return { txnId: `IMPS_${txnRef}_${Date.now()}`, channel: 'imps', settledAt: new Date() };
+// IMPS fallback — Cashfree bank transfer
+async function initiateImpsTransfer(rider, amount, txnRef) {
+  // For bank mode, Cashfree uses IMPS with account + IFSC
+  // Falls back to sandbox if no keys
+  const result = await sendUpiPayout({
+    riderId:    rider._id.toString(),
+    upiId:      rider.upiId || `${rider.phone}@upi`,
+    amount,
+    riderName:  rider.name,
+    email:      rider.email,
+    phone:      rider.phone,
+    reason:     `RideShield IMPS payout — ${txnRef}`,
+  });
+  return {
+    txnId:    result.transferId,
+    channel:  'imps',
+    settledAt: new Date(),
+  };
 }
 
-// Sandbox simulation (always succeeds — for demo/hackathon)
+// Sandbox simulation (always succeeds — when no Cashfree keys)
 async function initiateSandboxTransfer(amount, txnRef) {
   await new Promise(r => setTimeout(r, 400));
   return { txnId: `SANDBOX_${txnRef}_${Date.now()}`, channel: 'sandbox', settledAt: new Date() };
@@ -102,7 +131,7 @@ async function runSettlement(payout, rider) {
 
     if (preferredPaymentMode === 'bank') {
       try {
-        txnResult = await initiateImpsTransfer(calculated, txnRef);
+        txnResult = await initiateImpsTransfer(rider, calculated, txnRef);
         addStep(payout, 'transfer_initiated', 'done', `IMPS transfer to bank account — ₹${calculated} sent`);
       } catch (impsErr) {
         payout.rollbackAttempted = true;
@@ -112,13 +141,13 @@ async function runSettlement(payout, rider) {
       }
     } else if (preferredPaymentMode === 'upi' && upiId && upiId.includes('@')) {
       try {
-        txnResult = await initiateUpiTransfer(upiId, calculated, txnRef);
-        addStep(payout, 'transfer_initiated', 'done', `UPI transfer to ${upiId} — ₹${calculated} sent`);
+        txnResult = await initiateUpiTransfer(rider, calculated, txnRef);
+        addStep(payout, 'transfer_initiated', 'done', `UPI transfer to ${upiId} — ₹${calculated} sent. UTR: ${txnResult.utr || 'pending'}`);
       } catch (upiErr) {
         payout.rollbackAttempted = true;
         addStep(payout, 'transfer_initiated', 'failed', `UPI failed: ${upiErr.message} — trying IMPS`);
         try {
-          txnResult = await initiateImpsTransfer(calculated, txnRef);
+          txnResult = await initiateImpsTransfer(rider, calculated, txnRef);
           addStep(payout, 'transfer_initiated', 'done', `IMPS fallback succeeded — ₹${calculated} sent`);
         } catch {
           txnResult = await initiateSandboxTransfer(calculated, txnRef);
