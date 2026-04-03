@@ -87,3 +87,8 @@
 .plan-upi-input:focus { border-color: #667eea; }
 .plan-upi-check { font-size: 1.3rem; }
 .plan-upi-hint { color: #a0aec0; font-size: 0.78rem; margin: 0.6rem 0 0; }
+
+/* Razorpay secured badge */
+.razorpay-badge { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; margin-top: 1rem; padding: 0.8rem 1.5rem; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.88rem; color: #4a5568; }
+.razorpay-badge strong { color: #1e3a5f; }
+.rzp-badges { display: flex; gap: 0.5rem; font-size: 0.75rem; color: #718096; }

@@ -187,13 +187,19 @@ const SelectPlanPage = () => {
               />
               {upiId.includes('@') && <span className="plan-upi-check">✅</span>}
             </div>
-            <p className="plan-upi-hint">💡 You'll verify your identity via Razorpay OTP (₹1 refundable) — plan is free</p>
+            <p className="plan-upi-hint">💡 Payouts sent automatically when disruption is verified by AI</p>
           </div>
 
           <button className="btn-continue" onClick={handleSelectPlan} disabled={activating}>
             {activating ? '⏳ Activating...' : `Activate ${plan?.icon} ${plan?.name} Plan →`}
           </button>
           <p className="plan-note">✅ Free activation · Payouts sent automatically to your UPI when disruption is verified</p>
+          <div className="razorpay-badge">
+            <span>🔒 Secured by <strong>Razorpay</strong></span>
+            <span className="rzp-badges">
+              <span>256-bit SSL</span><span>·</span><span>PCI DSS</span><span>·</span><span>RBI Compliant</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
