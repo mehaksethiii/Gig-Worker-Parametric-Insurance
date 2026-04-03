@@ -1562,7 +1562,7 @@
 .lg-diamond-wrap { display: flex; flex-direction: column; align-items: center; z-index: 1; }
 .lg-diamond-glow { position: absolute; width: 160px; height: 160px; background: radial-gradient(circle,rgba(79,172,254,0.4),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
 @keyframes lgPulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.15);opacity:1} }
-.lg-diamond-img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(79,172,254,0.8)) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); animation: lgFloat 3s ease-in-out infinite; }
+.lg-diamond-img { width: 130px; height: 130px; object-fit: contain; mix-blend-mode: screen; filter: drop-shadow(0 0 24px rgba(79,172,254,0.9)) drop-shadow(0 8px 16px rgba(0,0,0,0.6)); animation: lgFloat 3s ease-in-out infinite; background: transparent; }
 @keyframes lgFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 .lg-pedestal { width: 100px; height: 12px; background: linear-gradient(135deg,#4facfe,#1e3a5f); border-radius: 50%; margin-top: 0.3rem; opacity: 0.7; box-shadow: 0 4px 12px rgba(79,172,254,0.5); }
 .lg-tier-name { font-size: 0.85rem; font-weight: 900; letter-spacing: 3px; color: #4facfe; margin-top: 0.4rem; text-shadow: 0 0 10px rgba(79,172,254,0.8); }
@@ -1577,14 +1577,15 @@
 .lg-badges-row { display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; width: 100%; }
 .lg-milestones-row { gap: 0.8rem; }
 .lg-badge-card { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; min-width: 90px; }
-.lg-badge-card.locked { opacity: 0.5; }
-.lg-badge-glow { width: 70px; height: 70px; border-radius: 50%; position: absolute; filter: blur(12px); opacity: 0.5; animation: lgPulse 2.5s ease-in-out infinite; }
-.lg-badge-icon-wrap { position: relative; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.3); }
-.lg-badge-pct { font-size: 1.3rem; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
-.lg-badge-pedestal { width: 60px; height: 10px; background: linear-gradient(135deg,#ffd700,#cd7f32); border-radius: 50%; opacity: 0.8; box-shadow: 0 3px 8px rgba(205,127,50,0.5); }
-.lg-badge-label { font-size: 0.72rem; font-weight: 700; color: #2d3748; text-align: center; max-width: 90px; line-height: 1.3; }
+.lg-badge-card.locked { opacity: 0.45; }
+.lg-badge-glow { width: 80px; height: 80px; border-radius: 50%; position: absolute; filter: blur(14px); opacity: 0.55; animation: lgPulse 2.5s ease-in-out infinite; }
+.lg-badge-icon-wrap { position: relative; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 3px 6px rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.2); border: 3px solid rgba(255,255,255,0.4); }
+.lg-badge-pct { font-size: 1.4rem; font-weight: 900; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+/* Pedestal — trapezoid shape */
+.lg-badge-pedestal { width: 70px; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 14px solid; border-top-color: #cd7f32; filter: drop-shadow(0 4px 8px rgba(205,127,50,0.6)); margin-top: -1px; }
+.lg-badge-label { font-size: 0.72rem; font-weight: 700; color: #2d3748; text-align: center; max-width: 90px; line-height: 1.3; margin-top: 0.3rem; }
 
 /* Honest Rider Badge */
-.lg-honest-wrap { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 0.5rem; }
-.lg-honest-glow { position: absolute; width: 200px; height: 200px; background: radial-gradient(circle,rgba(255,215,0,0.3),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
-.lg-honest-svg { width: 180px; height: 160px; filter: drop-shadow(0 8px 24px rgba(255,215,0,0.5)); z-index: 1; }
+.lg-honest-wrap { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 1rem; }
+.lg-honest-glow { position: absolute; width: 240px; height: 240px; background: radial-gradient(circle,rgba(255,215,0,0.35),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; top: -20px; }
+.lg-honest-svg { width: 220px; height: 200px; filter: drop-shadow(0 8px 28px rgba(255,215,0,0.6)); z-index: 1; }

@@ -1752,10 +1752,10 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                 <div className="lg-diamond-wrap">
                   <div className="lg-diamond-glow"/>
                   <img
-                    src="https://tse1.mm.bing.net/th/id/OIP.R2qyZ1_qLTk7YAd8cBinxwHaHY?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    src="https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png"
                     alt="Diamond"
                     className="lg-diamond-img"
-                    onError={e => { e.target.src='https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png'; }}
+                    onError={e => { e.target.src='https://em-content.zobj.net/thumbs/120/google/350/gem-stone_1f48e.png'; }}
                   />
                   <div className="lg-pedestal"/>
                   <div className="lg-tier-name" style={{ color: tierColor }}>{tier.replace(/💎|🥇|🥈|🥉/g,'').trim()}</div>
