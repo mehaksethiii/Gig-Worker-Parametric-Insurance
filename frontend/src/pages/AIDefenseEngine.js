@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 // ─── Sensor Fusion Engine ───────────────────────────────────────────────────
 const useSensorFusion = () => {
@@ -375,6 +376,109 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
       <div className="ade-section">
         <h3>🗺️ Anomaly Heatmap</h3>
         <p className="ade-sub">Zones with high fraud attempts vs genuine disruptions</p>
+
+        {/* Visuals row: Pie chart + India map */}
+        <div className="ade-heatmap-visuals">
+
+          {/* Pie Chart — Fraud vs Disruption breakdown */}
+          <div className="ade-pie-card">
+            <div className="ade-pie-title">📊 Fraud vs Disruption Split</div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'High Fraud Zones',    value: heatmapZones.filter(z => z.fraud > 60).length },
+                    { name: 'Watch Zones',          value: heatmapZones.filter(z => z.fraud > 40 && z.fraud <= 60).length },
+                    { name: 'Safe Zones',           value: heatmapZones.filter(z => z.fraud <= 40).length },
+                  ]}
+                  cx="50%" cy="50%" innerRadius={55} outerRadius={85}
+                  paddingAngle={4} dataKey="value"
+                >
+                  <Cell fill="#fc8181"/>
+                  <Cell fill="#f6ad55"/>
+                  <Cell fill="#68d391"/>
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.8rem' }}
+                  formatter={(val, name) => [`${val} zone${val !== 1 ? 's' : ''}`, name]}
+                />
+                <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: '0.78rem' }}/>
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Avg fraud vs disruption summary */}
+            <div className="ade-pie-stats">
+              <div className="ade-pie-stat">
+                <span style={{ color: '#fc8181' }}>●</span>
+                Avg Fraud: <strong>{Math.round(heatmapZones.reduce((s,z)=>s+z.fraud,0)/heatmapZones.length)}%</strong>
+              </div>
+              <div className="ade-pie-stat">
+                <span style={{ color: '#4facfe' }}>●</span>
+                Avg Disruption: <strong>{Math.round(heatmapZones.reduce((s,z)=>s+z.disruption,0)/heatmapZones.length)}%</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* India SVG Map with city pins */}
+          <div className="ade-map-card">
+            <div className="ade-pie-title">🇮🇳 City Risk Map</div>
+            <div className="ade-india-map">
+              {/* Simplified India outline SVG */}
+              <svg viewBox="0 0 300 340" className="india-svg">
+                <path
+                  d="M120,10 L145,8 L165,15 L185,12 L200,25 L210,20 L225,30 L230,45 L240,55 L245,70
+                     L255,80 L260,95 L255,110 L265,125 L260,140 L250,155 L245,170 L235,185 L225,200
+                     L215,215 L205,228 L195,240 L185,252 L175,262 L165,272 L158,282 L152,292 L148,302
+                     L145,310 L142,302 L138,292 L132,282 L125,272 L115,262 L105,252 L95,240 L85,228
+                     L75,215 L65,200 L55,185 L48,170 L42,155 L35,140 L30,125 L38,110 L35,95 L42,80
+                     L50,65 L58,52 L68,40 L80,30 L92,22 L105,14 Z"
+                  fill="rgba(79,172,254,0.08)" stroke="rgba(79,172,254,0.4)" strokeWidth="1.5"
+                />
+                {/* City dots */}
+                {[
+                  { name: 'Delhi',     x: 148, y: 72,  fraud: 78, disruption: 45 },
+                  { name: 'Mumbai',    x: 88,  y: 168, fraud: 32, disruption: 82 },
+                  { name: 'Bangalore', x: 138, y: 238, fraud: 15, disruption: 28 },
+                  { name: 'Hyderabad', x: 148, y: 200, fraud: 45, disruption: 60 },
+                  { name: 'Kolkata',   x: 210, y: 130, fraud: 62, disruption: 55 },
+                ].map((city, i) => {
+                  const isHighFraud = city.fraud > 60;
+                  const isWatch     = city.fraud > 40 && city.fraud <= 60;
+                  const dotColor    = isHighFraud ? '#fc8181' : isWatch ? '#f6ad55' : '#68d391';
+                  const isUserCity  = (insuranceData?.city || '').toLowerCase() === city.name.toLowerCase();
+                  return (
+                    <g key={i}>
+                      {/* Pulse ring for high-fraud cities */}
+                      {isHighFraud && (
+                        <circle cx={city.x} cy={city.y} r="14" fill="none"
+                          stroke={dotColor} strokeWidth="1" opacity="0.4"
+                          style={{ animation: 'mapPulse 2s ease-out infinite' }}/>
+                      )}
+                      <circle cx={city.x} cy={city.y} r={isUserCity ? 9 : 7}
+                        fill={dotColor} stroke="white" strokeWidth={isUserCity ? 2.5 : 1.5}
+                        style={{ filter: `drop-shadow(0 2px 4px ${dotColor}88)` }}/>
+                      {/* User city star */}
+                      {isUserCity && (
+                        <text x={city.x} y={city.y + 4} textAnchor="middle" fontSize="8" fill="white" fontWeight="900">★</text>
+                      )}
+                      <text x={city.x} y={city.y - 12} textAnchor="middle"
+                        fontSize="9" fill="#1e3a5f" fontWeight="600">{city.name}</text>
+                      <text x={city.x} y={city.y + 20} textAnchor="middle"
+                        fontSize="8" fill={dotColor} fontWeight="700">{city.fraud}% fraud</text>
+                    </g>
+                  );
+                })}
+              </svg>
+              <div className="ade-map-legend">
+                <span><span style={{color:'#fc8181'}}>●</span> High Fraud</span>
+                <span><span style={{color:'#f6ad55'}}>●</span> Watch</span>
+                <span><span style={{color:'#68d391'}}>●</span> Safe</span>
+                <span><span style={{color:'#4facfe'}}>★</span> Your City</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table rows below */}
         <div className="ade-heatmap">
           <div className="ade-heatmap-header">
             <span>Zone</span><span>Fraud Risk</span><span>Disruption</span><span>Status</span>

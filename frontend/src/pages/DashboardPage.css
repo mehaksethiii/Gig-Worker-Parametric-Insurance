@@ -893,6 +893,29 @@
 .ade-bar-wrap span { font-size: 0.78rem; color: #718096; }
 .ade-zone-tag { color: white; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 20px; text-align: center; }
 
+/* Heatmap visuals row */
+.ade-heatmap-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.4rem; }
+.ade-pie-card, .ade-map-card { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem 1.2rem; }
+.ade-pie-title { font-size: 0.85rem; font-weight: 700; color: #2d3748; margin-bottom: 0.5rem; }
+.ade-pie-stats { display: flex; gap: 1.2rem; justify-content: center; margin-top: 0.4rem; }
+.ade-pie-stat { font-size: 0.8rem; color: #4a5568; display: flex; align-items: center; gap: 0.3rem; }
+.ade-pie-stat strong { color: #1e3a5f; }
+
+/* India map */
+.ade-india-map { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.india-svg { width: 100%; max-width: 240px; height: auto; }
+.ade-map-legend { display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; font-size: 0.75rem; color: #4a5568; }
+.ade-map-legend span { display: flex; align-items: center; gap: 0.25rem; }
+
+@keyframes mapPulse {
+  0%   { r: 14; opacity: 0.5; }
+  100% { r: 22; opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .ade-heatmap-visuals { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 768px) {
   .ade-trust-card { grid-template-columns: 1fr; }
   .ade-sensors-grid { grid-template-columns: 1fr; }
