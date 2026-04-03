@@ -281,6 +281,29 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
         <h3>📡 Sensor Fusion Engine</h3>
         <div className="ade-sensors-grid">
           <div className="ade-sensor-card">
+            <div className="ade-sensor-visual" style={{
+              background: 'linear-gradient(135deg,#ebf8ff,#bee3f8)',
+              borderBottom: '2px solid #4facfe',
+            }}>
+              <svg viewBox="0 0 80 60" style={{width:'100%',height:'100%'}}>
+                {/* Satellite signal rings */}
+                {[28,20,12].map((r,i) => (
+                  <circle key={i} cx="40" cy="38" r={r} fill="none"
+                    stroke={`rgba(79,172,254,${0.25+i*0.2})`} strokeWidth="1.5"
+                    strokeDasharray={i===0?"4 3":"none"}/>
+                ))}
+                {/* Pin */}
+                <circle cx="40" cy="38" r="5" fill="#4facfe"/>
+                <path d="M40,33 Q44,26 40,20 Q36,26 40,33Z" fill="#e53e3e"/>
+                {/* Satellite */}
+                <rect x="58" y="8" width="10" height="6" rx="1" fill="#4facfe" opacity="0.8"/>
+                <line x1="55" y1="11" x2="58" y2="11" stroke="#4facfe" strokeWidth="1.5"/>
+                <line x1="68" y1="11" x2="71" y2="11" stroke="#4facfe" strokeWidth="1.5"/>
+                <line x1="63" y1="8" x2="63" y2="5" stroke="#4facfe" strokeWidth="1.5"/>
+                {/* Signal beam */}
+                <line x1="58" y1="14" x2="44" y2="33" stroke="rgba(79,172,254,0.4)" strokeWidth="1" strokeDasharray="2 2"/>
+              </svg>
+            </div>
             <div className="ade-sensor-icon">📍</div>
             <h4>GPS</h4>
             {sensors.gps ? (<>
@@ -291,7 +314,32 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
                 : <span className="ade-ok-tag">✅ Normal</span>}
             </>) : <p className="ade-waiting">Acquiring GPS...</p>}
           </div>
+
           <div className="ade-sensor-card">
+            <div className="ade-sensor-visual" style={{
+              background: 'linear-gradient(135deg,#fff8f0,#feebc8)',
+              borderBottom: '2px solid #f6ad55',
+            }}>
+              <svg viewBox="0 0 80 60" style={{width:'100%',height:'100%'}}>
+                {/* Phone outline */}
+                <rect x="28" y="8" width="24" height="40" rx="4" fill="white" stroke="#f6ad55" strokeWidth="2"/>
+                <rect x="31" y="12" width="18" height="28" rx="2" fill="#fff8f0"/>
+                <circle cx="40" cy="44" r="2" fill="#f6ad55"/>
+                {/* Motion waves */}
+                {[1,2,3].map((n,i) => (
+                  <path key={i}
+                    d={`M${18-i*4},${28+i*4} Q${22-i*4},${20+i*2} ${18-i*4},${12+i*0}`}
+                    fill="none" stroke={`rgba(246,173,85,${0.6-i*0.15})`} strokeWidth="2" strokeLinecap="round"/>
+                ))}
+                {[1,2,3].map((n,i) => (
+                  <path key={i}
+                    d={`M${62+i*4},${28+i*4} Q${58+i*4},${20+i*2} ${62+i*4},${12+i*0}`}
+                    fill="none" stroke={`rgba(246,173,85,${0.6-i*0.15})`} strokeWidth="2" strokeLinecap="round"/>
+                ))}
+                {/* Acceleration arrow */}
+                <path d="M36,26 L44,26 L42,22 M44,26 L42,30" stroke="#e67e22" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              </svg>
+            </div>
             <div className="ade-sensor-icon">📳</div>
             <h4>Accelerometer</h4>
             {sensors.accelerometer ? (<>
@@ -302,7 +350,29 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
               </span>
             </>) : <p className="ade-waiting">No motion sensor data<br/><small>(available on mobile)</small></p>}
           </div>
+
           <div className="ade-sensor-card">
+            <div className="ade-sensor-visual" style={{
+              background: 'linear-gradient(135deg,#f0fff4,#c6f6d5)',
+              borderBottom: '2px solid #48bb78',
+            }}>
+              <svg viewBox="0 0 80 60" style={{width:'100%',height:'100%'}}>
+                {/* WiFi / network arcs */}
+                {[22,16,10].map((r,i) => (
+                  <path key={i}
+                    d={`M${40-r},${34} A${r},${r} 0 0,1 ${40+r},${34}`}
+                    fill="none" stroke={`rgba(72,187,120,${0.3+i*0.25})`} strokeWidth="2.5" strokeLinecap="round"/>
+                ))}
+                <circle cx="40" cy="36" r="3.5" fill="#48bb78"/>
+                {/* Signal bars */}
+                {[0,1,2,3].map((n,i) => (
+                  <rect key={i} x={52+i*6} y={44-(i+1)*6} width="4" height={(i+1)*6}
+                    rx="1" fill={`rgba(72,187,120,${0.4+i*0.2})`}/>
+                ))}
+                {/* Speed label */}
+                <text x="14" y="52" fontSize="7" fill="#276749" fontWeight="700">NETWORK</text>
+              </svg>
+            </div>
             <div className="ade-sensor-icon">🌐</div>
             <h4>Network</h4>
             {sensors.network ? (<>
@@ -311,7 +381,29 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
               <p>Latency: <strong>{sensors.network.rtt}ms</strong></p>
             </>) : <p className="ade-waiting">Network info unavailable</p>}
           </div>
+
           <div className="ade-sensor-card">
+            <div className="ade-sensor-visual" style={{
+              background: 'linear-gradient(135deg,#faf5ff,#e9d8fd)',
+              borderBottom: '2px solid #9b59b6',
+            }}>
+              <svg viewBox="0 0 80 60" style={{width:'100%',height:'100%'}}>
+                {/* Timeline track */}
+                <line x1="10" y1="35" x2="70" y2="35" stroke="#e9d8fd" strokeWidth="3" strokeLinecap="round"/>
+                {/* Position dots on timeline */}
+                {[10,22,34,46,58,70].map((x,i) => (
+                  <circle key={i} cx={x} cy="35" r={i===5?5:3}
+                    fill={i===5?'#9b59b6':'rgba(155,89,182,0.5)'}
+                    stroke={i===5?'white':'none'} strokeWidth="1.5"/>
+                ))}
+                {/* Connecting line (path taken) */}
+                <polyline points="10,35 22,32 34,36 46,33 58,35 70,35"
+                  fill="none" stroke="#9b59b6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                {/* Check mark */}
+                <circle cx="40" cy="18" r="9" fill="#9b59b6"/>
+                <path d="M35,18 L38,21 L45,14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
+            </div>
             <div className="ade-sensor-icon">⚡</div>
             <h4>Temporal Check</h4>
             {sensors.gps?.speedFlag
