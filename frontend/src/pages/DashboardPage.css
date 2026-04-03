@@ -1532,3 +1532,12 @@
 .prm-btn-download:hover { background: #c6f6d5; }
 .prm-btn-close { flex: 1; background: linear-gradient(135deg,#667eea,#764ba2); color: white; border: none; padding: 0.75rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; }
 .prm-btn-close:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+
+/* Loyalty tier SVG visuals */
+.tier-svg-wrap { width: 72px; height: 72px; flex-shrink: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); }
+.tier-svg { width: 100%; height: 100%; }
+.tier-left { display: flex; align-items: center; gap: 1rem; }
+.honest-badge-svg { width: 80px; height: 80px; flex-shrink: 0; filter: drop-shadow(0 4px 16px rgba(246,211,101,0.5)); }
+.honest-badge-card { display: flex; align-items: center; gap: 1.2rem; background: linear-gradient(135deg,#fffbeb,#fef3c7); border: 2px solid #f6d365; border-radius: 16px; padding: 1.4rem; margin-top: 1.5rem; }
+.honest-badge-card h3 { margin: 0 0 0.3rem; color: #1e3a5f; font-size: 1rem; }
+.honest-badge-card p { margin: 0; color: #4a5568; font-size: 0.85rem; line-height: 1.6; }

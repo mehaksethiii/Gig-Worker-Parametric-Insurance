@@ -1741,10 +1741,77 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
               <h2>🎁 Loyalty Rewards</h2>
               <p className="section-subtitle">Honesty pays. Every honest claim builds your rewards.</p>
 
-              {/* Tier Card */}
+              {/* Tier Card with SVG visual */}
               <div className="loyalty-tier-card" style={{ borderColor: tierColor }}>
                 <div className="tier-left">
-                  <div className="tier-badge" style={{ background: tierColor }}>{tier}</div>
+                  {/* SVG tier badge */}
+                  <div className="tier-svg-wrap">
+                    {trustScore >= 85 ? (
+                      // Diamond
+                      <svg viewBox="0 0 80 80" className="tier-svg">
+                        <defs>
+                          <linearGradient id="dG" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#a8edff"/><stop offset="50%" stopColor="#4facfe"/><stop offset="100%" stopColor="#00c6ff"/>
+                          </linearGradient>
+                        </defs>
+                        <polygon points="40,8 68,28 58,68 22,68 12,28" fill="url(#dG)" stroke="#4facfe" strokeWidth="2"/>
+                        <polygon points="40,8 68,28 40,22" fill="rgba(255,255,255,0.4)"/>
+                        <polygon points="40,22 68,28 58,68 22,68 12,28" fill="rgba(79,172,254,0.3)"/>
+                        <line x1="12" y1="28" x2="68" y2="28" stroke="white" strokeWidth="1.5" opacity="0.6"/>
+                        <polygon points="40,22 12,28 22,68 40,68" fill="rgba(0,0,0,0.1)"/>
+                        <text x="40" y="58" textAnchor="middle" fontSize="9" fill="white" fontWeight="800">DIAMOND</text>
+                      </svg>
+                    ) : trustScore >= 70 ? (
+                      // Gold Medal
+                      <svg viewBox="0 0 80 80" className="tier-svg">
+                        <defs>
+                          <linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#ffe066"/><stop offset="50%" stopColor="#ffd700"/><stop offset="100%" stopColor="#f6a800"/>
+                          </linearGradient>
+                          <linearGradient id="rG" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#ff6b6b"/><stop offset="100%" stopColor="#c0392b"/>
+                          </linearGradient>
+                        </defs>
+                        {/* Ribbon */}
+                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="url(#rG)"/>
+                        <line x1="36" y1="8" x2="36" y2="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+                        <line x1="44" y1="8" x2="44" y2="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+                        {/* Medal circle */}
+                        <circle cx="40" cy="52" r="24" fill="url(#gG)" stroke="#f6a800" strokeWidth="2"/>
+                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
+                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">1</text>
+                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">GOLD</text>
+                      </svg>
+                    ) : trustScore >= 55 ? (
+                      // Silver Medal
+                      <svg viewBox="0 0 80 80" className="tier-svg">
+                        <defs>
+                          <linearGradient id="sG" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#e8e8e8"/><stop offset="50%" stopColor="#c0c0c0"/><stop offset="100%" stopColor="#a0a0a0"/>
+                          </linearGradient>
+                        </defs>
+                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="#4facfe"/>
+                        <circle cx="40" cy="52" r="24" fill="url(#sG)" stroke="#a0a0a0" strokeWidth="2"/>
+                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
+                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">2</text>
+                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">SILVER</text>
+                      </svg>
+                    ) : (
+                      // Bronze Medal
+                      <svg viewBox="0 0 80 80" className="tier-svg">
+                        <defs>
+                          <linearGradient id="bG2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#f0a070"/><stop offset="50%" stopColor="#cd7f32"/><stop offset="100%" stopColor="#a0522d"/>
+                          </linearGradient>
+                        </defs>
+                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="#68d391"/>
+                        <circle cx="40" cy="52" r="24" fill="url(#bG2)" stroke="#a0522d" strokeWidth="2"/>
+                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
+                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">3</text>
+                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">BRONZE</text>
+                      </svg>
+                    )}
+                  </div>
                   <div>
                     <h3>Your Loyalty Tier</h3>
                     <p>Based on trust score, claim history & activity</p>
@@ -1816,13 +1883,31 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                 </div>
               </div>
 
-              {/* Honest Rider Badge */}
+              {/* Honest Rider Badge — SVG visual */}
               {isHonest && (
                 <div className="honest-badge-card">
-                  <div className="hb-icon">🫶</div>
+                  <svg viewBox="0 0 90 90" className="honest-badge-svg">
+                    <defs>
+                      <linearGradient id="hG" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f6d365"/><stop offset="100%" stopColor="#fda085"/>
+                      </linearGradient>
+                      <linearGradient id="hG2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#a8ff78"/><stop offset="100%" stopColor="#78ffd6"/>
+                      </linearGradient>
+                    </defs>
+                    {/* Shield */}
+                    <path d="M45,8 L72,20 L72,48 Q72,68 45,80 Q18,68 18,48 L18,20 Z" fill="url(#hG)" stroke="#f6a800" strokeWidth="2"/>
+                    <path d="M45,14 L66,24 L66,48 Q66,64 45,74 Q24,64 24,48 L24,24 Z" fill="url(#hG2)" opacity="0.6"/>
+                    {/* Checkmark */}
+                    <path d="M32,45 L41,54 L58,36" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    {/* Stars */}
+                    {[0,1,2].map(i => (
+                      <text key={i} x={28+i*17} y="88" textAnchor="middle" fontSize="10">⭐</text>
+                    ))}
+                  </svg>
                   <div>
                     <h3>Honest Rider Badge</h3>
-                    <p>You have zero fraud flags on your account. This badge shows RideShield trusts you completely. Keep it up — your rewards will keep growing.</p>
+                    <p>Zero fraud flags. RideShield trusts you completely. Keep it up — your rewards keep growing.</p>
                   </div>
                 </div>
               )}
