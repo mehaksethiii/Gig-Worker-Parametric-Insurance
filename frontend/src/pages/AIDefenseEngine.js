@@ -517,7 +517,7 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
               {/* Real India map image as background */}
               <div style={{ position: 'relative', width: '100%', maxWidth: '280px' }}>
                 <img
-                  src={`${process.env.PUBLIC_URL}/india-map.png`}
+                  src={`${process.env.PUBLIC_URL}/india-map.png.webp`}
                   alt="India Map"
                   style={{ width: '100%', borderRadius: '8px', opacity: 0.85 }}
                   onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
