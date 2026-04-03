@@ -1751,12 +1751,43 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                 <div className="lg-title">✦ Loyalty Rewards ✦</div>
                 <div className="lg-diamond-wrap">
                   <div className="lg-diamond-glow"/>
-                  <img
-                    src="https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png"
-                    alt="Diamond"
-                    className="lg-diamond-img"
-                    onError={e => { e.target.src='https://em-content.zobj.net/thumbs/120/google/350/gem-stone_1f48e.png'; }}
-                  />
+                  {/* Beautiful custom SVG diamond */}
+                  <svg viewBox="0 0 160 140" className="lg-diamond-img" style={{width:'150px',height:'130px'}}>
+                    <defs>
+                      <linearGradient id="dTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#e8f8ff"/><stop offset="100%" stopColor="#4facfe"/></linearGradient>
+                      <linearGradient id="dLeft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#0066cc"/><stop offset="100%" stopColor="#4facfe"/></linearGradient>
+                      <linearGradient id="dRight" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#4facfe"/><stop offset="100%" stopColor="#0044aa"/></linearGradient>
+                      <linearGradient id="dBot" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#2288dd"/><stop offset="100%" stopColor="#001166"/></linearGradient>
+                      <filter id="dGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    </defs>
+                    {/* Outer glow ring */}
+                    <ellipse cx="80" cy="75" rx="72" ry="65" fill="none" stroke="rgba(79,172,254,0.15)" strokeWidth="20"/>
+                    {/* Crown facets */}
+                    <polygon points="80,8 110,42 80,35 50,42" fill="url(#dTop)" filter="url(#dGlow)"/>
+                    <polygon points="50,42 80,35 80,8 30,42" fill="rgba(200,235,255,0.9)"/>
+                    <polygon points="110,42 80,35 80,8 130,42" fill="rgba(100,180,255,0.7)"/>
+                    {/* Belt */}
+                    <polygon points="30,42 50,42 80,35 110,42 130,42 80,48" fill="rgba(255,255,255,0.5)"/>
+                    {/* Pavilion facets */}
+                    <polygon points="30,42 80,48 80,125 10,75" fill="url(#dLeft)"/>
+                    <polygon points="130,42 80,48 80,125 150,75" fill="url(#dRight)"/>
+                    <polygon points="10,75 80,125 150,75 80,48" fill="url(#dBot)"/>
+                    {/* Inner sparkle lines */}
+                    <line x1="80" y1="48" x2="80" y2="125" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                    <line x1="30" y1="42" x2="150" y2="75" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+                    <line x1="130" y1="42" x2="10" y2="75" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+                    {/* Sparkle stars */}
+                    {[[55,18],[105,22],[35,60],[125,55],[80,10]].map(([x,y],i) => (
+                      <g key={i} transform={`translate(${x},${y})`}>
+                        <line x1="-5" y1="0" x2="5" y2="0" stroke="white" strokeWidth="1.5" opacity="0.9"/>
+                        <line x1="0" y1="-5" x2="0" y2="5" stroke="white" strokeWidth="1.5" opacity="0.9"/>
+                        <line x1="-3" y1="-3" x2="3" y2="3" stroke="white" strokeWidth="1" opacity="0.6"/>
+                        <line x1="3" y1="-3" x2="-3" y2="3" stroke="white" strokeWidth="1" opacity="0.6"/>
+                      </g>
+                    ))}
+                    {/* Top highlight */}
+                    <polygon points="80,8 95,30 80,26 65,30" fill="rgba(255,255,255,0.7)"/>
+                  </svg>
                   <div className="lg-pedestal"/>
                   <div className="lg-tier-name" style={{ color: tierColor }}>{tier.replace(/💎|🥇|🥈|🥉/g,'').trim()}</div>
                 </div>
@@ -1766,25 +1797,42 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                 </div>
               </div>
 
-              {/* ── Active Rewards — pedestal cards ── */}
+              {/* ── Active Rewards — shield badge cards ── */}
               <div className="lg-section-title">✦ Your Active Rewards</div>
               <div className="lg-badges-row">
                 {discount > 0 && (
                   <div className="lg-badge-card">
                     <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#68d391,#276749)' }}/>
-                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#68d391,#276749)' }}>
-                      <span className="lg-badge-pct">{discount}%</span>
-                    </div>
+                    <svg viewBox="0 0 90 100" className="lg-shield-svg">
+                      <defs>
+                        <linearGradient id="sg1o" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#cd7f32"/></linearGradient>
+                        <linearGradient id="sf1i" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#68d391"/><stop offset="100%" stopColor="#276749"/></linearGradient>
+                      </defs>
+                      <path d="M45,4 L82,18 L82,55 Q82,80 45,96 Q8,80 8,55 L8,18 Z" fill="url(#sg1o)"/>
+                      <path d="M45,11 L75,23 L75,55 Q75,76 45,90 Q15,76 15,55 L15,23 Z" fill="url(#sf1i)"/>
+                      <path d="M45,17 L68,27 L68,54 Q68,72 45,84 Q22,72 22,54 L22,27 Z" fill="rgba(0,0,0,0.12)"/>
+                      <text x="45" y="54" textAnchor="middle" fontSize="24" fontWeight="900" fill="white">{discount}%</text>
+                      <path d="M45,17 L58,24 L45,22 L32,24 Z" fill="rgba(255,255,255,0.4)"/>
+                    </svg>
                     <div className="lg-badge-pedestal"/>
                     <div className="lg-badge-label">Premium Discount</div>
                   </div>
                 )}
                 {bonusCoverage > 0 && (
                   <div className="lg-badge-card">
-                    <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#4facfe,#1e3a5f)' }}/>
-                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#4facfe,#1e3a5f)' }}>
-                      <span className="lg-badge-pct">₹{bonusCoverage}</span>
-                    </div>
+                    <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#90cdf4,#2b6cb0)' }}/>
+                    <svg viewBox="0 0 90 100" className="lg-shield-svg">
+                      <defs>
+                        <linearGradient id="sg2o" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#cd7f32"/></linearGradient>
+                        <linearGradient id="sf2i" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#90cdf4"/><stop offset="100%" stopColor="#2b6cb0"/></linearGradient>
+                      </defs>
+                      <path d="M45,4 L82,18 L82,55 Q82,80 45,96 Q8,80 8,55 L8,18 Z" fill="url(#sg2o)"/>
+                      <path d="M45,11 L75,23 L75,55 Q75,76 45,90 Q15,76 15,55 L15,23 Z" fill="url(#sf2i)"/>
+                      <path d="M45,17 L68,27 L68,54 Q68,72 45,84 Q22,72 22,54 L22,27 Z" fill="rgba(0,0,0,0.12)"/>
+                      <text x="45" y="50" textAnchor="middle" fontSize="15" fontWeight="900" fill="white">₹{bonusCoverage}</text>
+                      <text x="45" y="65" textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.85)">BONUS</text>
+                      <path d="M45,17 L58,24 L45,22 L32,24 Z" fill="rgba(255,255,255,0.4)"/>
+                    </svg>
                     <div className="lg-badge-pedestal"/>
                     <div className="lg-badge-label">Bonus Coverage</div>
                   </div>
@@ -1792,9 +1840,17 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                 {isHonest && (
                   <div className="lg-badge-card">
                     <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#f6ad55,#c05621)' }}/>
-                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#f6ad55,#c05621)' }}>
-                      <span style={{ fontSize:'1.6rem' }}>⚡</span>
-                    </div>
+                    <svg viewBox="0 0 90 100" className="lg-shield-svg">
+                      <defs>
+                        <linearGradient id="sg3o" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#cd7f32"/></linearGradient>
+                        <linearGradient id="sf3i" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f6ad55"/><stop offset="100%" stopColor="#c05621"/></linearGradient>
+                      </defs>
+                      <path d="M45,4 L82,18 L82,55 Q82,80 45,96 Q8,80 8,55 L8,18 Z" fill="url(#sg3o)"/>
+                      <path d="M45,11 L75,23 L75,55 Q75,76 45,90 Q15,76 15,55 L15,23 Z" fill="url(#sf3i)"/>
+                      <path d="M45,17 L68,27 L68,54 Q68,72 45,84 Q22,72 22,54 L22,27 Z" fill="rgba(0,0,0,0.12)"/>
+                      <text x="45" y="58" textAnchor="middle" fontSize="30" fill="white">⚡</text>
+                      <path d="M45,17 L58,24 L45,22 L32,24 Z" fill="rgba(255,255,255,0.4)"/>
+                    </svg>
                     <div className="lg-badge-pedestal"/>
                     <div className="lg-badge-label">Fast-Track Claims</div>
                   </div>
