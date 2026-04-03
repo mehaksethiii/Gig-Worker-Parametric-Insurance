@@ -23,36 +23,35 @@ RideShield is a parametric insurance platform that:
 ## ✨ Features
 
 ### For Riders
-- **6 Insurance Plans** — ₹99/week (Starter) to ₹999/week (Enterprise)
-- **AI Risk Scoring** — dynamic premium based on city, hours, delivery type
-- **Voice Claims** — speak in Hindi/English/Hinglish, AI detects disruption and files claim
-- **Disaster Report** — tap any disaster type (flood, curfew, strike, heatwave etc.) → instant validation → auto payout
-- **Auto Weather Trigger** — system detects extreme rain/heat/AQI and pays out automatically
-- **Daily Claim Limit** — max 2 claims/day with fair usage policy popup
-- **Payout Receipt** — downloadable HTML receipt (opens as PDF) after every payout
-- **Offline Mode** — claims queued when offline, synced when back online
-- **Voice Response** — AI speaks back in Hindi or English confirming claim status
-- **Family Assurance** — real email sent to family contact when coverage activates (Gmail)
-- **Loyalty Rewards** — Diamond/Gold/Silver/Bronze tiers with game-style visuals
-- **Trust Score** — builds with honest claims, unlocks faster payouts and discounts
-- **Live Map** — real GPS map showing nearby riders and disruption zones
-- **Story of the Day** — real rider stories from affected cities
+- **6 Insurance Plans** — From ₹99 Starter to ₹999 Enterprise, each with increasing payout limits and coverage types
+- **AI Risk Scoring** — Dynamically adjusts your premium based on your city's weather history, working hours, and delivery type
+- **Voice Claims** — Say "baarish ho rahi hai" or "there is a strike" — AI detects the disruption and files the claim instantly
+- **Disaster Report** — Tap any disaster type (flood, curfew, earthquake etc.) and the system validates + pays out automatically
+- **Auto Weather Trigger** — Backend monitors weather every 30 mins; if thresholds are crossed, payout fires without any rider action
+- **Daily Claim Limit** — Max 2 claims per day per rider to prevent abuse, with a clear fair-usage policy popup
+- **Payout Receipt** — After every payout, a branded receipt pops up with a download button that saves as a printable PDF
+- **Offline Mode** — Claims made without internet are queued locally and synced automatically when connection restores
+- **Voice Response** — System speaks back in Hindi or English confirming the claim, amount, and status
+- **Family Assurance** — Real email sent to the rider's registered family contact the moment coverage activates
+- **Loyalty Rewards** — Earn Diamond/Gold/Silver/Bronze tier badges based on trust score, with game-style visuals
+- **Trust Score** — Builds with every honest claim; higher score = faster payouts, higher limits, premium discounts
+- **Live Map** — Real GPS map showing your location, nearby riders, and active disruption zones
+- **Story of the Day** — Real stories from gig workers in affected cities, rotating daily
 
 ### AI Defense Engine
-- **Multi-signal fraud detection** — GPS, accelerometer, network, weather, peer verification
-- **Zero Trust processing** — 8 checks before any payout
-- **Geo-fencing** — dynamic risk zones per city
-- **Anomaly Heatmap** — fraud vs disruption breakdown with India city map + pie chart
-- **Real-time Risk Stream** — live updating risk score every 2 seconds
-- **XAI (Explainable AI)** — shows exactly why a claim was approved or flagged
-- **Sensor Fusion** — GPS + motion + network cross-verification
+- **Multi-signal Fraud Detection** — Combines GPS, accelerometer, network quality, weather, and peer reports to verify every claim
+- **Zero Trust Processing** — Every claim must pass 8 independent checks before any payout is released
+- **Geo-fencing** — City divided into risk zones; only riders inside eligible zones get auto-coverage
+- **Anomaly Heatmap** — Visual map of India showing fraud risk vs genuine disruption per city with pie chart breakdown
+- **Real-time Risk Stream** — Live risk score updating every 2 seconds based on current conditions
+- **XAI (Explainable AI)** — Shows exactly which signals approved or flagged a claim, in plain language
+- **Sensor Fusion** — Cross-checks GPS speed against phone motion sensors to catch GPS spoofing
 
 ### Admin Dashboard (`/admin`)
-- Login with admin password
-- Live stats — total riders, claims today, payouts sent, fraud flags
-- Riders table — view all registered riders, plans, UPI IDs
-- Claims table — approve/reject claims with one click
-- Payouts table — full settlement history with transaction IDs
+- **Live Stats** — Real-time counts of riders, claims today, total payouts sent, and fraud flags
+- **Riders Table** — View all registered riders with their plan, city, UPI ID, and risk level
+- **Claims Management** — Approve or reject any claim with one click, with fraud flags highlighted
+- **Payouts History** — Full settlement log with transaction IDs, channels, and amounts
 - Password: `rideshield_admin_2026`
 
 ### Settlement Pipeline (matches DEVTrails slide)
