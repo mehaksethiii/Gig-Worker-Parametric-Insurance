@@ -81,63 +81,21 @@ const SelectPlanPage = () => {
       .finally(() => setLoadingRisk(false));
   }, [selectedPlan]); // eslint-disable-line
 
-  // Activate plan — verify identity via Razorpay ₹1 (refundable), then activate free
   const handleSelectPlan = async () => {
     const plan = PLANS.find(p => p.id === selectedPlan);
     const premium = riskData?.dynamicPremium || plan.price;
     setActivating(true);
 
-    try {
-      const loaded = await loadRazorpay();
-      if (loaded) {
-        // Create ₹1 verification order
-        const orderRes = await fetch('/api/payment/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: 1, planName: plan.name }),
-        });
-        const orderData = await orderRes.json();
-
-        if (orderData.success) {
-          await new Promise((resolve, reject) => {
-            const options = {
-              key:         orderData.keyId,
-              amount:      orderData.amount, // ₹1 in paise = 100
-              currency:    'INR',
-              name:        'RideShield',
-              description: `Identity Verification — ${plan.name} Plan (₹1 refundable)`,
-              order_id:    orderData.orderId,
-              prefill: {
-                name:    riderData.name  || '',
-                email:   riderData.email || '',
-                contact: riderData.phone || '',
-              },
-              theme: { color: plan.color },
-              handler: (response) => {
-                // Save UPI to backend
-                const token = getToken();
-                if (token && upiId) {
-                  fetch('/api/settlement/payment-details', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ upiId, preferredPaymentMode: 'upi' }),
-                  }).catch(() => {});
-                }
-                setVerified(true);
-                resolve(response);
-              },
-              modal: { ondismiss: () => reject(new Error('cancelled')) },
-            };
-            new window.Razorpay(options).open();
-          });
-        }
-      }
-    } catch (err) {
-      if (err.message === 'cancelled') { setActivating(false); return; }
-      // Razorpay unavailable — activate directly
+    // Save UPI to backend if provided
+    const token = getToken();
+    if (token && upiId && upiId.includes('@')) {
+      fetch('/api/settlement/payment-details', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ upiId, preferredPaymentMode: 'upi' }),
+      }).catch(() => {});
     }
 
-    // Save plan
     const insuranceData = {
       ...riderData,
       plan: plan.name,
@@ -148,7 +106,6 @@ const SelectPlanPage = () => {
       riskLevel: riskData?.riskLevel || 'Medium',
     };
     localStorage.setItem('insuranceData', JSON.stringify(insuranceData));
-    const token = getToken();
     if (token) {
       fetch('/api/auth/update-plan', {
         method: 'PUT',
@@ -245,9 +202,9 @@ const SelectPlanPage = () => {
           </div>
 
           <button className="btn-continue" onClick={handleSelectPlan} disabled={activating}>
-            {activating ? '⏳ Verifying...' : verified ? '✅ Verified! Activating...' : `Verify & Activate ${plan?.icon} ${plan?.name} Plan →`}
+            {activating ? '⏳ Activating...' : `Activate ${plan?.icon} ${plan?.name} Plan →`}
           </button>
-          <p className="plan-note">🔐 Secured by Razorpay · Plan is FREE · ₹1 identity check only</p>
+          <p className="plan-note">✅ Free activation · Payouts sent automatically to your UPI when disruption is verified</p>
         </div>
       </div>
     </div>
