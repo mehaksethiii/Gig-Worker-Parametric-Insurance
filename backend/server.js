@@ -21,6 +21,7 @@ app.use('/api/claims',     require('./routes/claims'));
 app.use('/api/notify',     require('./routes/notify'));
 app.use('/api/settlement', require('./routes/settlement'));
 app.use('/api/payment',    require('./routes/payment'));
+app.use('/api/admin',      require('./routes/admin'));
 
 app.get('/api/health', (_, res) => res.json({ status: 'OK' }));
 

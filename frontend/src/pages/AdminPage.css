@@ -1,0 +1,91 @@
+/* ── Admin Dashboard ─────────────────────────────────────────────────────── */
+.adm-page { display: flex; min-height: 100vh; background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+
+/* Login */
+.adm-login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#1e3a5f,#2c5282); }
+.adm-login-card { background: white; border-radius: 20px; padding: 2.5rem; width: 360px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.adm-login-logo { display: flex; align-items: center; justify-content: center; gap: 0.6rem; color: #1e3a5f; font-size: 1.4rem; font-weight: 800; margin-bottom: 1rem; }
+.adm-login-card h2 { margin: 0 0 0.3rem; color: #1e3a5f; }
+.adm-login-card p { color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem; }
+.adm-login-input { width: 100%; padding: 0.85rem 1rem; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; outline: none; box-sizing: border-box; margin-bottom: 0.8rem; }
+.adm-login-input:focus { border-color: #4facfe; }
+.adm-login-err { color: #e53e3e; font-size: 0.85rem; margin-bottom: 0.6rem; }
+.adm-login-btn { width: 100%; padding: 0.9rem; background: linear-gradient(135deg,#1e3a5f,#2c5282); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.adm-login-btn:hover { opacity: 0.9; }
+
+/* Sidebar */
+.adm-sidebar { width: 240px; background: #1e3a5f; display: flex; flex-direction: column; padding: 1.5rem 0; min-height: 100vh; flex-shrink: 0; }
+.adm-sidebar-logo { display: flex; align-items: center; gap: 0.5rem; color: white; font-size: 1.1rem; font-weight: 800; padding: 0 1.5rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.adm-badge { background: #f6ad55; color: #1e3a5f; font-size: 0.6rem; font-weight: 900; padding: 0.15rem 0.4rem; border-radius: 4px; letter-spacing: 1px; }
+.adm-nav { display: flex; flex-direction: column; gap: 0.3rem; padding: 1rem 0.8rem; flex: 1; }
+.adm-nav-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.75rem 1rem; border-radius: 10px; border: none; background: none; color: rgba(255,255,255,0.7); font-size: 0.9rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+.adm-nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+.adm-nav-item.active { background: rgba(255,255,255,0.15); color: white; font-weight: 700; }
+.adm-sidebar-footer { padding: 1rem 0.8rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 0.5rem; }
+.adm-refresh, .adm-logout { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+.adm-refresh { background: rgba(255,255,255,0.1); color: white; }
+.adm-refresh:hover { background: rgba(255,255,255,0.2); }
+.adm-logout { background: rgba(252,129,129,0.2); color: #fc8181; }
+.adm-logout:hover { background: rgba(252,129,129,0.3); }
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Main */
+.adm-main { flex: 1; padding: 2rem; overflow-y: auto; }
+.adm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+.adm-header h1 { margin: 0; font-size: 1.4rem; color: #1e3a5f; font-weight: 800; }
+.adm-live { color: #48bb78; font-size: 0.85rem; font-weight: 700; }
+.adm-toast { position: fixed; top: 1.5rem; right: 1.5rem; background: #1e3a5f; color: white; padding: 0.8rem 1.4rem; border-radius: 10px; font-weight: 600; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+
+/* Stats grid */
+.adm-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.adm-stat-card { background: white; border-radius: 14px; padding: 1.2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.adm-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.adm-stat-value { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.adm-stat-label { font-size: 0.8rem; color: #718096; margin-top: 0.2rem; font-weight: 600; }
+.adm-stat-sub { font-size: 0.75rem; color: #a0aec0; margin-top: 0.1rem; }
+
+/* Section */
+.adm-section { background: white; border-radius: 14px; padding: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.adm-section h3 { margin: 0 0 1rem; color: #1e3a5f; font-size: 1rem; }
+.adm-table-wrap { overflow-x: auto; }
+.adm-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.adm-table th { background: #f7fafc; color: #4a5568; font-weight: 700; padding: 0.7rem 0.8rem; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.adm-table td { padding: 0.7rem 0.8rem; border-bottom: 1px solid #f0f0f0; color: #2d3748; vertical-align: middle; }
+.adm-table tr:hover td { background: #f7fafc; }
+.adm-row-flagged td { background: #fff5f5 !important; }
+.adm-empty { text-align: center; color: #a0aec0; padding: 2rem !important; }
+
+/* Status badges */
+.adm-status { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.adm-approved, .adm-completed { background: #f0fff4; color: #276749; }
+.adm-processing, .adm-pending { background: #fffbeb; color: #c05621; }
+.adm-flagged { background: #fff5f5; color: #c53030; }
+.adm-rejected, .adm-failed { background: #fff5f5; color: #c53030; }
+
+.adm-plan-badge { background: #ebf8ff; color: #2b6cb0; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+.adm-no-plan { color: #a0aec0; font-size: 0.8rem; }
+.adm-risk { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+.adm-risk-high { background: #fff5f5; color: #c53030; }
+.adm-risk-medium { background: #fffbeb; color: #c05621; }
+.adm-risk-low { background: #f0fff4; color: #276749; }
+.adm-flag-tag { background: #fff5f5; color: #c53030; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; }
+.adm-ok-tag { background: #f0fff4; color: #276749; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; }
+.adm-channel { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
+.adm-ch-upi { background: #f0fff4; color: #276749; }
+.adm-ch-imps { background: #ebf8ff; color: #2b6cb0; }
+.adm-ch-sandbox { background: #faf5ff; color: #6b46c1; }
+
+/* Action buttons */
+.adm-actions { display: flex; gap: 0.4rem; }
+.adm-btn-approve { background: #f0fff4; border: 1px solid #48bb78; color: #276749; border-radius: 6px; padding: 0.3rem 0.5rem; cursor: pointer; display: flex; align-items: center; }
+.adm-btn-approve:hover { background: #c6f6d5; }
+.adm-btn-reject { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; border-radius: 6px; padding: 0.3rem 0.5rem; cursor: pointer; display: flex; align-items: center; }
+.adm-btn-reject:hover { background: #fed7d7; }
+.adm-btn-danger { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
+.adm-btn-danger:hover { background: #fed7d7; }
+
+@media (max-width: 768px) {
+  .adm-sidebar { display: none; }
+  .adm-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
