@@ -322,12 +322,8 @@ const DashboardPage = () => {
           status,
         }),
       });
-      const data = await res.json();
       setFamilySent(true);
       addToast('❤️ Family assurance email sent!', 'success');
-      if (data.preview) {
-        setTimeout(() => window.open(data.preview, '_blank'), 1500);
-      }
     } catch (_) {}
     setFamilySending(false);
   };
