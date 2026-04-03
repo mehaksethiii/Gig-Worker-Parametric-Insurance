@@ -77,3 +77,13 @@
 .btn-download-receipt:hover { background: #edf2f7; }
 .btn-go-dashboard { flex: 1; background: linear-gradient(135deg,#667eea,#764ba2); color: white; border: none; padding: 0.8rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
 .btn-go-dashboard:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+
+/* UPI input box on plan footer */
+.plan-upi-box { background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 1.4rem 1.6rem; margin-bottom: 1.4rem; text-align: left; max-width: 520px; margin-left: auto; margin-right: auto; }
+.plan-upi-title { font-weight: 700; color: #1e3a5f; font-size: 1rem; margin-bottom: 0.3rem; }
+.plan-upi-sub { color: #718096; font-size: 0.85rem; margin: 0 0 0.9rem; }
+.plan-upi-row { display: flex; align-items: center; gap: 0.6rem; }
+.plan-upi-input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+.plan-upi-input:focus { border-color: #667eea; }
+.plan-upi-check { font-size: 1.3rem; }
+.plan-upi-hint { color: #a0aec0; font-size: 0.78rem; margin: 0.6rem 0 0; }

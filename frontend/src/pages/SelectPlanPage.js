@@ -4,6 +4,16 @@ import { Shield, Check, TrendingUp } from 'lucide-react';
 import { getToken, getRider, saveAuth } from '../auth';
 import './SelectPlanPage.css';
 
+// Load Razorpay script
+const loadRazorpay = () => new Promise(resolve => {
+  if (window.Razorpay) return resolve(true);
+  const script = document.createElement('script');
+  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  script.onload = () => resolve(true);
+  script.onerror = () => resolve(false);
+  document.body.appendChild(script);
+});
+
 const PLANS = [
   {
     id: 'starter', name: 'Starter', price: 99, maxPayout: 250, category: 'basic',
@@ -50,6 +60,9 @@ const SelectPlanPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [riskData, setRiskData] = useState(null);
   const [loadingRisk, setLoadingRisk] = useState(false);
+  const [upiId, setUpiId] = useState(getRider()?.upiId || '');
+  const [activating, setActivating] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   const riderData = getRider() || JSON.parse(localStorage.getItem('riderData') || '{}');
   const visiblePlans = activeTab === 'all' ? PLANS : PLANS.filter(p => p.category === activeTab);
@@ -68,14 +81,69 @@ const SelectPlanPage = () => {
       .finally(() => setLoadingRisk(false));
   }, [selectedPlan]); // eslint-disable-line
 
-  // Just activate plan — NO payment here. Payouts happen automatically when claims trigger.
-  const handleSelectPlan = () => {
+  // Activate plan — verify identity via Razorpay ₹1 (refundable), then activate free
+  const handleSelectPlan = async () => {
     const plan = PLANS.find(p => p.id === selectedPlan);
+    const premium = riskData?.dynamicPremium || plan.price;
+    setActivating(true);
+
+    try {
+      const loaded = await loadRazorpay();
+      if (loaded) {
+        // Create ₹1 verification order
+        const orderRes = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 1, planName: plan.name }),
+        });
+        const orderData = await orderRes.json();
+
+        if (orderData.success) {
+          await new Promise((resolve, reject) => {
+            const options = {
+              key:         orderData.keyId,
+              amount:      orderData.amount, // ₹1 in paise = 100
+              currency:    'INR',
+              name:        'RideShield',
+              description: `Identity Verification — ${plan.name} Plan (₹1 refundable)`,
+              order_id:    orderData.orderId,
+              prefill: {
+                name:    riderData.name  || '',
+                email:   riderData.email || '',
+                contact: riderData.phone || '',
+              },
+              theme: { color: plan.color },
+              handler: (response) => {
+                // Save UPI to backend
+                const token = getToken();
+                if (token && upiId) {
+                  fetch('/api/settlement/payment-details', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ upiId, preferredPaymentMode: 'upi' }),
+                  }).catch(() => {});
+                }
+                setVerified(true);
+                resolve(response);
+              },
+              modal: { ondismiss: () => reject(new Error('cancelled')) },
+            };
+            new window.Razorpay(options).open();
+          });
+        }
+      }
+    } catch (err) {
+      if (err.message === 'cancelled') { setActivating(false); return; }
+      // Razorpay unavailable — activate directly
+    }
+
+    // Save plan
     const insuranceData = {
       ...riderData,
       plan: plan.name,
-      premium: riskData?.dynamicPremium || plan.price,
+      premium,
       maxPayout: plan.maxPayout,
+      upiId,
       riskScore: riskData?.riskScore || 70,
       riskLevel: riskData?.riskLevel || 'Medium',
     };
@@ -85,9 +153,10 @@ const SelectPlanPage = () => {
       fetch('/api/auth/update-plan', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ plan: plan.name, premium: insuranceData.premium, maxPayout: plan.maxPayout }),
+        body: JSON.stringify({ plan: plan.name, premium, maxPayout: plan.maxPayout }),
       }).then(r => r.json()).then(d => { if (d.rider) saveAuth(token, d.rider); }).catch(() => {});
     }
+    setActivating(false);
     navigate('/dashboard');
   };
 
@@ -158,10 +227,27 @@ const SelectPlanPage = () => {
         </div>
 
         <div className="plan-footer">
-          <button className="btn-continue" onClick={handleSelectPlan}>
-            Activate {plan?.icon} {plan?.name} Plan →
+          {/* UPI / Payout details input */}
+          <div className="plan-upi-box">
+            <div className="plan-upi-title">📱 Enter your UPI ID for automatic payouts</div>
+            <p className="plan-upi-sub">When a claim is approved, payout goes here instantly — no action needed from you</p>
+            <div className="plan-upi-row">
+              <input
+                className="plan-upi-input"
+                type="text"
+                placeholder="e.g. yourname@paytm or 9876543210@upi"
+                value={upiId}
+                onChange={e => setUpiId(e.target.value)}
+              />
+              {upiId.includes('@') && <span className="plan-upi-check">✅</span>}
+            </div>
+            <p className="plan-upi-hint">💡 You'll verify your identity via Razorpay OTP (₹1 refundable) — plan is free</p>
+          </div>
+
+          <button className="btn-continue" onClick={handleSelectPlan} disabled={activating}>
+            {activating ? '⏳ Verifying...' : verified ? '✅ Verified! Activating...' : `Verify & Activate ${plan?.icon} ${plan?.name} Plan →`}
           </button>
-          <p className="plan-note">✅ Coverage activates instantly · Payouts sent automatically when disruption is verified</p>
+          <p className="plan-note">🔐 Secured by Razorpay · Plan is FREE · ₹1 identity check only</p>
         </div>
       </div>
     </div>
