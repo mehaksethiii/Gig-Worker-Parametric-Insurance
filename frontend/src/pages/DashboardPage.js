@@ -1741,52 +1741,29 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
               <h2>🎁 Loyalty Rewards</h2>
               <p className="section-subtitle">Honesty pays. Every honest claim builds your rewards.</p>
 
-              {/* Tier Card with SVG visual */}
+              {/* Tier Card with large image */}
               <div className="loyalty-tier-card" style={{ borderColor: tierColor }}>
                 <div className="tier-left">
-                  {/* SVG tier badge */}
-                  <div className="tier-svg-wrap">
-                    {trustScore >= 85 ? (
-                      // Diamond image
-                      <img
-                        src="https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png"
-                        alt="Diamond"
-                        className="tier-img"
-                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-                      />
-                    ) : trustScore >= 70 ? (
-                      // Gold medal image
-                      <img
-                        src="https://em-content.zobj.net/source/microsoft-teams/363/1st-place-medal_1f947.png"
-                        alt="Gold"
-                        className="tier-img"
-                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-                      />
-                    ) : trustScore >= 55 ? (
-                      // Silver medal image
-                      <img
-                        src="https://em-content.zobj.net/source/microsoft-teams/363/2nd-place-medal_1f948.png"
-                        alt="Silver"
-                        className="tier-img"
-                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-                      />
-                    ) : (
-                      // Bronze medal image
-                      <img
-                        src="https://em-content.zobj.net/source/microsoft-teams/363/3rd-place-medal_1f949.png"
-                        alt="Bronze"
-                        className="tier-img"
-                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
-                      />
-                    )}
-                    {/* Fallback SVG if image fails */}
-                    <span style={{display:'none', fontSize:'3.5rem'}}>
-                      {trustScore >= 85 ? '💎' : trustScore >= 70 ? '🥇' : trustScore >= 55 ? '🥈' : '🥉'}
-                    </span>
+                  <div className="tier-img-wrap">
+                    <img
+                      src={
+                        trustScore >= 85
+                          ? 'https://tse1.mm.bing.net/th/id/OIP.R2qyZ1_qLTk7YAd8cBinxwHaHY?rs=1&pid=ImgDetMain&o=7&rm=3'
+                          : trustScore >= 70
+                          ? 'https://em-content.zobj.net/source/microsoft-teams/363/1st-place-medal_1f947.png'
+                          : trustScore >= 55
+                          ? 'https://em-content.zobj.net/source/microsoft-teams/363/2nd-place-medal_1f948.png'
+                          : 'https://em-content.zobj.net/source/microsoft-teams/363/3rd-place-medal_1f949.png'
+                      }
+                      alt={tier}
+                      className="tier-big-img"
+                      onError={e => { e.target.src = trustScore >= 85 ? 'https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png' : e.target.src; }}
+                    />
+                    <div className="tier-label" style={{ color: tierColor }}>{tier.replace(/💎|🥇|🥈|🥉/g,'').trim()}</div>
                   </div>
                   <div>
-                    <h3>Your Loyalty Tier</h3>
-                    <p>Based on trust score, claim history & activity</p>
+                    <h3 style={{margin:'0 0 0.2rem',fontSize:'1rem'}}>Your Loyalty Tier</h3>
+                    <p style={{margin:0,fontSize:'0.8rem',color:'#718096'}}>Trust score · Claim history</p>
                   </div>
                 </div>
                 <div className="tier-score" style={{ color: tierColor }}>{trustScore}<span>/100</span></div>

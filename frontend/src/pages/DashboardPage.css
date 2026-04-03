@@ -1543,3 +1543,9 @@
 .honest-badge-card p { margin: 0; color: #4a5568; font-size: 0.85rem; line-height: 1.6; }
 
 .tier-img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25)); }
+
+/* Large tier image */
+.tier-img-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+.tier-big-img { width: 100px; height: 100px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.3)); transition: transform 0.3s ease; }
+.tier-big-img:hover { transform: scale(1.08) rotate(-3deg); }
+.tier-label { font-size: 0.78rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
