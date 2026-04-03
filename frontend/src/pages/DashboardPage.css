@@ -1510,3 +1510,24 @@
 .psc-btn { background: linear-gradient(135deg, #1e3a5f, #2c5282); color: white; border: none; padding: 0.85rem; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; }
 .psc-btn:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(30,58,95,0.3); transform: translateY(-1px); }
 .psc-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* ── Payout Receipt Popup ─────────────────────────────────────────────────── */
+.payout-receipt-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.payout-receipt-modal { background: white; border-radius: 20px; max-width: 420px; width: 100%; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.3); animation: prPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes prPop { from { transform: scale(0.7) translateY(40px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.prm-header { background: linear-gradient(135deg,#1e3a5f,#2c5282); color: white; padding: 1.8rem; text-align: center; }
+.prm-check { font-size: 3rem; margin-bottom: 0.4rem; }
+.prm-header h2 { margin: 0; font-size: 1.4rem; }
+.prm-header p { margin: 0.3rem 0 0; opacity: 0.8; font-size: 0.9rem; }
+.prm-body { padding: 1.5rem 1.8rem; }
+.prm-amount { font-size: 2.8rem; font-weight: 900; color: #48bb78; text-align: center; line-height: 1; }
+.prm-reason { text-align: center; color: #718096; font-size: 0.88rem; margin: 0.3rem 0 1.2rem; }
+.prm-rows { display: flex; flex-direction: column; gap: 0; }
+.prm-row { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
+.prm-row:last-child { border-bottom: none; }
+.prm-row span { color: #718096; }
+.prm-actions { display: flex; gap: 0.8rem; padding: 1rem 1.8rem 1.5rem; }
+.prm-btn-download { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: #f0fff4; border: 1.5px solid #48bb78; color: #276749; padding: 0.75rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; }
+.prm-btn-download:hover { background: #c6f6d5; }
+.prm-btn-close { flex: 1; background: linear-gradient(135deg,#667eea,#764ba2); color: white; border: none; padding: 0.75rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; }
+.prm-btn-close:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
