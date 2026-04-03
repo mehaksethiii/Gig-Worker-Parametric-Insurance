@@ -1525,7 +1525,8 @@
 .prm-rows { display: flex; flex-direction: column; gap: 0; }
 .prm-row { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
 .prm-row:last-child { border-bottom: none; }
-.prm-row span { color: #718096; }
+.prm-row span { color: #4a5568; font-weight: 500; }
+.prm-row strong { color: #1e3a5f; font-weight: 700; }
 .prm-actions { display: flex; gap: 0.8rem; padding: 1rem 1.8rem 1.5rem; }
 .prm-btn-download { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem; background: #f0fff4; border: 1.5px solid #48bb78; color: #276749; padding: 0.75rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; }
 .prm-btn-download:hover { background: #c6f6d5; }
