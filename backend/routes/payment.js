@@ -43,8 +43,7 @@ router.post('/verify', (req, res) => {
     .update(body)
     .digest('hex');
 
-  if (expectedSignature === razorpay_signa
-ture) {
+  if (expectedSignature === razorpay_signature) {
     res.json({ success: true, message: 'Payment verified' });
   } else {
     res.status(400).json({ success: false, message: 'Invalid signature' });
