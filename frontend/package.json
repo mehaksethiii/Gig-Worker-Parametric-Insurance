@@ -26,10 +26,7 @@
     "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
-    "extends": [
-      "react-app"
-    ],
-    "ignorePatterns": ["*.json"]
+    "extends": ["react-app"]
   },
   "browserslist": {
     "production": [
