@@ -493,8 +493,6 @@ const DashboardPage = () => {
 
   // Payout receipt popup
   const [payoutReceipt, setPayoutReceipt] = useState(null);
-  // OTP verification — holds pending payout until rider verifies
-  const [pendingPayout, setPendingPayout] = useState(null);
 
   // Call this instead of setPayoutReceipt directly — calls backend, updates timeline, bell, then OTP
   const triggerPayout = React.useCallback(async (receiptData) => {
@@ -531,8 +529,8 @@ const DashboardPage = () => {
     addNotification(`💰 ₹${receiptData.amount} payout sent — ${receiptData.reason}`, 'success');
     addToast(`💰 ₹${receiptData.amount} sent to ${receiptData.upiId || 'your UPI'}!`, 'success');
 
-    // 4. Show OTP popup
-    setPendingPayout(receiptData);
+    // 4. Show receipt directly — no OTP
+    setPayoutReceipt(receiptData);
   }, []); // eslint-disable-line
 
   // Fraud tester state (kept for AI Defense Engine reference)
@@ -1164,13 +1162,6 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
   return (
     <div className="dashboard-page">
-
-      {/* OTP Verification Popup */}
-      <OTPVerifyPopup
-        pending={pendingPayout}
-        onVerified={() => { setPayoutReceipt(pendingPayout); setPendingPayout(null); fetchClaims(); }}
-        onCancel={() => setPendingPayout(null)}
-      />
 
       {/* Payout Receipt Popup */}
       <PayoutReceiptPopup receipt={payoutReceipt} onClose={() => setPayoutReceipt(null)}/>
