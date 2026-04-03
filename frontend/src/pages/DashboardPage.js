@@ -1719,7 +1719,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
         {/* ── REPORT DISASTER ── */}
         {activeTab === 'disaster' && (
-          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} />
+          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} onPayout={setPayoutReceipt}/>
         )}
 
         {/* ── SETTLEMENT ── */}
@@ -1858,7 +1858,7 @@ const EXCLUDED_TYPES = [
   },
 ];
 
-const DisasterReportTab = ({ insuranceData, getToken, addToast }) => {
+const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout }) => {
   const [selected, setSelected]         = React.useState(null);
   const [step, setStep]                 = React.useState('idle'); // idle | locating | validating | result
   const [gps, setGps]                   = React.useState(null);
@@ -1976,6 +1976,16 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast }) => {
 
       setSubmitted(true);
       addToast(`💰 ₹${amount} payout sent to ${upiId !== 'sandbox' ? upiId : 'your account'}!`, 'success');
+      // Show receipt popup
+      if (onPayout) onPayout({
+        riderName: insuranceData?.name,
+        upiId:     upiId !== 'sandbox' ? upiId : insuranceData?.upiId,
+        amount,
+        reason:    selected.reason,
+        txnId:     `DISASTER_${Date.now()}`,
+        plan:      insuranceData?.plan,
+        city:      insuranceData?.city,
+      });
     } catch (_) {
       setError('Submission failed. Claim saved to offline queue.');
     }

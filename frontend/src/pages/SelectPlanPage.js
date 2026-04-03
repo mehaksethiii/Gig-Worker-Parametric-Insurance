@@ -161,7 +161,7 @@ const SelectPlanPage = () => {
           <button className="btn-continue" onClick={handleSelectPlan}>
             Activate {plan?.icon} {plan?.name} Plan →
           </button>
-          <p className="plan-note">✅ No payment now · Payouts sent automatically when disruption is verified</p>
+          <p className="plan-note">✅ Coverage activates instantly · Payouts sent automatically when disruption is verified</p>
         </div>
       </div>
     </div>
