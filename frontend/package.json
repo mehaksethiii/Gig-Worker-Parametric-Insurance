@@ -28,7 +28,8 @@
   "eslintConfig": {
     "extends": [
       "react-app"
-    ]
+    ],
+    "ignorePatterns": ["*.json"]
   },
   "browserslist": {
     "production": [

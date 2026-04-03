@@ -5,7 +5,7 @@ import HomePage      from "./pages/HomePage";
 import RegisterPage  from "./pages/RegisterPage";
 import SelectPlanPage from "./pages/SelectPlanPage";
 import DashboardPage  from "./pages/DashboardPage";
-import AdminPage      from "./pages/AdminPage";
+import AdminPage      from "./pages/AdminPage"; // eslint-disable-line no-unused-vars
 
 /* ═══════════════════════════ DELIVERY RIDER ═══════════════════════════ */
 const DeliveryRider = ({ cls = "" }) => (
