@@ -1553,37 +1553,54 @@
 /* ── Game-style Loyalty Section ─────────────────────────────────────────── */
 .loyalty-game { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; padding: 0.5rem 0; }
 
-/* Hero banner */
-.lg-hero { position: relative; width: 100%; background: linear-gradient(135deg,#1a1a4e,#2d1b69,#1a3a6e); border-radius: 20px; padding: 2rem 1.5rem; display: flex; flex-direction: column; align-items: center; overflow: hidden; min-height: 220px; }
-.lg-hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%,rgba(100,150,255,0.25),transparent 70%); pointer-events: none; }
-.lg-star { position: absolute; width: 3px; height: 3px; background: white; border-radius: 50%; animation: lgTwinkle 2s ease-in-out infinite; }
+/* Hero banner — light sky blue like reference */
+.lg-hero { position: relative; width: 100%; background: linear-gradient(160deg,#c8e8ff 0%,#b8d4f8 30%,#d4c8f8 60%,#e8d8ff 100%); border-radius: 20px; padding: 2rem 1.5rem 1.5rem; display: flex; flex-direction: column; align-items: center; overflow: hidden; min-height: 200px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 8px 32px rgba(100,150,255,0.2); }
+.lg-hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 20%,rgba(255,255,255,0.6),transparent 70%); pointer-events: none; }
+.lg-star { position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; animation: lgTwinkle 2s ease-in-out infinite; box-shadow: 0 0 4px white; }
 @keyframes lgTwinkle { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
-.lg-title { color: #ffd700; font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255,215,0,0.6); z-index: 1; }
+.lg-title { color: #1e3a5f; font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 0.8rem; text-shadow: 0 1px 4px rgba(255,255,255,0.8); z-index: 1; }
 .lg-diamond-wrap { display: flex; flex-direction: column; align-items: center; z-index: 1; }
-.lg-diamond-glow { position: absolute; width: 160px; height: 160px; background: radial-gradient(circle,rgba(79,172,254,0.4),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
+.lg-diamond-glow { position: absolute; width: 180px; height: 180px; background: radial-gradient(circle,rgba(100,180,255,0.5),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
 @keyframes lgPulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.15);opacity:1} }
-.lg-diamond-img { width: 130px; height: 130px; object-fit: contain; mix-blend-mode: screen; filter: drop-shadow(0 0 24px rgba(79,172,254,0.9)) drop-shadow(0 8px 16px rgba(0,0,0,0.6)); animation: lgFloat 3s ease-in-out infinite; background: transparent; }
-@keyframes lgFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-.lg-pedestal { width: 100px; height: 12px; background: linear-gradient(135deg,#4facfe,#1e3a5f); border-radius: 50%; margin-top: 0.3rem; opacity: 0.7; box-shadow: 0 4px 12px rgba(79,172,254,0.5); }
-.lg-tier-name { font-size: 0.85rem; font-weight: 900; letter-spacing: 3px; color: #4facfe; margin-top: 0.4rem; text-shadow: 0 0 10px rgba(79,172,254,0.8); }
-.lg-score-badge { position: absolute; top: 1.2rem; right: 1.5rem; z-index: 2; }
-.lg-score-num { font-size: 2rem; font-weight: 900; }
-.lg-score-max { font-size: 1rem; font-weight: 600; opacity: 0.7; }
+.lg-diamond-img { width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 0 28px rgba(79,172,254,1)) drop-shadow(0 0 8px rgba(150,220,255,0.8)); animation: lgFloat 3s ease-in-out infinite; }
+@keyframes lgFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+/* Silver pedestal like reference */
+.lg-pedestal { width: 120px; height: 20px; background: linear-gradient(180deg,#e8f4ff,#b8d0f0,#8ab0d8); border-radius: 50%; margin-top: -4px; box-shadow: 0 6px 16px rgba(100,150,200,0.4), inset 0 2px 4px rgba(255,255,255,0.6); }
+.lg-tier-name { font-size: 0.9rem; font-weight: 900; letter-spacing: 3px; color: #1e3a5f; margin-top: 0.5rem; text-shadow: 0 1px 3px rgba(255,255,255,0.8); }
+.lg-score-badge { position: absolute; top: 1.2rem; right: 1.5rem; z-index: 2; background: rgba(255,255,255,0.7); border-radius: 12px; padding: 0.3rem 0.8rem; backdrop-filter: blur(4px); }
+.lg-score-num { font-size: 1.8rem; font-weight: 900; color: #1e3a5f; }
+.lg-score-max { font-size: 0.9rem; font-weight: 600; color: #4a5568; }
 
 /* Section title */
 .lg-section-title { font-size: 0.9rem; font-weight: 800; color: #1e3a5f; letter-spacing: 1px; align-self: flex-start; padding-left: 0.5rem; }
 
-/* Badge cards on pedestals */
-.lg-badges-row { display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; width: 100%; }
-.lg-milestones-row { gap: 0.8rem; }
-.lg-badge-card { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; min-width: 90px; }
+/* Shield badge cards on gold oval pedestals */
+.lg-badges-row { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; width: 100%; }
+.lg-milestones-row { gap: 1rem; }
+.lg-badge-card { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 100px; }
 .lg-badge-card.locked { opacity: 0.45; }
-.lg-badge-glow { width: 80px; height: 80px; border-radius: 50%; position: absolute; filter: blur(14px); opacity: 0.55; animation: lgPulse 2.5s ease-in-out infinite; }
-.lg-badge-icon-wrap { position: relative; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 3px 6px rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.2); border: 3px solid rgba(255,255,255,0.4); }
-.lg-badge-pct { font-size: 1.4rem; font-weight: 900; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-/* Pedestal — trapezoid shape */
-.lg-badge-pedestal { width: 70px; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 14px solid; border-top-color: #cd7f32; filter: drop-shadow(0 4px 8px rgba(205,127,50,0.6)); margin-top: -1px; }
-.lg-badge-label { font-size: 0.72rem; font-weight: 700; color: #2d3748; text-align: center; max-width: 90px; line-height: 1.3; margin-top: 0.3rem; }
+.lg-badge-glow { width: 90px; height: 90px; border-radius: 50%; position: absolute; filter: blur(16px); opacity: 0.6; animation: lgPulse 2.5s ease-in-out infinite; }
+
+/* Shield shape */
+.lg-badge-icon-wrap {
+  position: relative; width: 90px; height: 100px;
+  clip-path: polygon(50% 0%, 100% 20%, 100% 65%, 50% 100%, 0% 65%, 0% 20%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.lg-badge-icon-wrap::before {
+  content: ''; position: absolute; inset: 3px;
+  clip-path: polygon(50% 0%, 100% 20%, 100% 65%, 50% 100%, 0% 65%, 0% 20%);
+  background: rgba(255,255,255,0.15);
+}
+.lg-badge-pct { font-size: 1.5rem; font-weight: 900; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.5); z-index: 1; }
+
+/* Gold oval pedestal */
+.lg-badge-pedestal-wrap { display: flex; flex-direction: column; align-items: center; margin-top: -2px; }
+.lg-badge-pedestal-oval { width: 80px; height: 16px; background: linear-gradient(180deg,#ffd700,#cd7f32); border-radius: 50%; box-shadow: 0 4px 12px rgba(205,127,50,0.5), inset 0 2px 4px rgba(255,255,255,0.4); }
+.lg-badge-pedestal-base { width: 70px; height: 8px; background: linear-gradient(180deg,#cd7f32,#8b4513); border-radius: 0 0 8px 8px; margin-top: -2px; }
+
+.lg-badge-label { font-size: 0.72rem; font-weight: 700; color: #2d3748; text-align: center; max-width: 100px; line-height: 1.3; margin-top: 0.4rem; }
 
 /* Honest Rider Badge */
 .lg-honest-wrap { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 1rem; }
