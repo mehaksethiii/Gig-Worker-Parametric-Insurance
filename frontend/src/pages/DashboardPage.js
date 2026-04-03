@@ -498,6 +498,15 @@ const DashboardPage = () => {
   const triggerPayout = React.useCallback(async (receiptData) => {
     const token = getToken();
 
+    // Frontend daily limit — max 1 claim per day
+    const today = new Date().toDateString();
+    const lastClaimDate = localStorage.getItem('lastClaimDate');
+    if (lastClaimDate === today) {
+      addToast('⚠️ Daily limit reached — 1 payout per day. Come back tomorrow.', 'warning');
+      addNotification('⚠️ Daily claim limit reached — try again tomorrow', 'warning');
+      return;
+    }
+
     // 1. Call backend settlement
     try {
       const sr = await fetch('/api/settlement/initiate', {
@@ -528,6 +537,9 @@ const DashboardPage = () => {
     // 3. Bell notification
     addNotification(`💰 ₹${receiptData.amount} payout sent — ${receiptData.reason}`, 'success');
     addToast(`💰 ₹${receiptData.amount} sent to ${receiptData.upiId || 'your UPI'}!`, 'success');
+
+    // Save today's date to enforce daily limit
+    localStorage.setItem('lastClaimDate', new Date().toDateString());
 
     // 4. Show receipt directly — no OTP
     setPayoutReceipt(receiptData);

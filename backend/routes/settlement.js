@@ -50,6 +50,14 @@ async function runSettlement(payout, rider) {
     const hasPolicy  = !!rider.insurancePlan?.name;
     const isActive   = rider.isActive;
     const dayStart   = new Date(); dayStart.setHours(0, 0, 0, 0);
+
+    // Daily limit — max 1 completed payout per day per rider
+    const todayPayouts = await Payout.countDocuments({
+      riderId: rider._id,
+      createdAt: { $gte: dayStart },
+      status: 'completed',
+    });
+
     const dupePayout = await Payout.findOne({
       riderId: rider._id,
       reason: payout.reason,
@@ -57,15 +65,28 @@ async function runSettlement(payout, rider) {
       status: 'completed',
     });
 
-    if (!hasPolicy || !isActive || dupePayout) {
-      const reason = !hasPolicy ? 'No active policy' : !isActive ? 'Rider inactive' : 'Duplicate payout today';
+    if (!hasPolicy || !isActive) {
+      const reason = !hasPolicy ? 'No active policy' : 'Rider inactive';
       addStep(payout, 'eligibility_check', 'failed', reason);
-      payout.status = 'failed';
-      payout.failureReason = reason;
+      payout.status = 'failed'; payout.failureReason = reason;
       await payout.save();
       return { success: false, reason };
     }
-    addStep(payout, 'eligibility_check', 'done', `Policy: ${rider.insurancePlan.name}, Zone: ${rider.city}, No duplicate`);
+    if (todayPayouts >= 1) {
+      const reason = `Daily claim limit reached (1 per day). Next claim available tomorrow.`;
+      addStep(payout, 'eligibility_check', 'failed', reason);
+      payout.status = 'failed'; payout.failureReason = reason;
+      await payout.save();
+      return { success: false, reason };
+    }
+    if (dupePayout) {
+      const reason = 'Duplicate claim — same disruption already paid today';
+      addStep(payout, 'eligibility_check', 'failed', reason);
+      payout.status = 'failed'; payout.failureReason = reason;
+      await payout.save();
+      return { success: false, reason };
+    }
+    addStep(payout, 'eligibility_check', 'done', `Policy: ${rider.insurancePlan.name}, Zone: ${rider.city}, Daily limit OK (${todayPayouts}/1 used)`);
     await payout.save();
 
     // STEP 3 — Payout calculated
