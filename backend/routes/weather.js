@@ -220,8 +220,9 @@ router.get('/check-triggers', async (req, res) => {
     const triggered = [];
 
     for (const rider of riders) {
-      const { data: wd } = await axios.get(`http://localhost:5000/api/weather/current/${encodeURIComponent(rider.city)}`);
-      if (!wd.isDisruption) continue;
+      try {
+        const { data: wd } = await axios.get(`http://localhost:5000/api/weather/current/${encodeURIComponent(rider.city)}`);
+        if (!wd.isDisruption) continue;
 
       const maxPayout = rider.insurancePlan?.maxPayout || 500;
 
@@ -275,6 +276,9 @@ router.get('/check-triggers', async (req, res) => {
       });
       await payout.save();
       triggered.push(payout);
+      } catch (riderErr) {
+        console.warn(`⚠️ Skipping rider ${rider.name} (${rider.city}): ${riderErr.message}`);
+      }
     }
     res.json({ message: 'Trigger check completed', ridersChecked: riders.length, payoutsTriggered: triggered.length });
   } catch (err) {
