@@ -514,7 +514,59 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
           <div className="ade-map-card">
             <div className="ade-pie-title">🇮🇳 City Risk Map</div>
             <div className="ade-india-map">
-              <svg viewBox="0 0 550 600" className="india-svg">
+              {/* Real India map image as background */}
+              <div style={{ position: 'relative', width: '100%', maxWidth: '280px' }}>
+                <img
+                  src={`${process.env.PUBLIC_URL}/india-map.png`}
+                  alt="India Map"
+                  style={{ width: '100%', borderRadius: '8px', opacity: 0.85 }}
+                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                />
+                {/* City pins overlaid on the image */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                  {[
+                    { name: 'Delhi',     top: '22%', left: '42%', fraud: 78, disruption: 45 },
+                    { name: 'Mumbai',    top: '55%', left: '22%', fraud: 32, disruption: 82 },
+                    { name: 'Bangalore', top: '75%', left: '38%', fraud: 15, disruption: 28 },
+                    { name: 'Hyderabad', top: '65%', left: '42%', fraud: 45, disruption: 60 },
+                    { name: 'Kolkata',   top: '38%', left: '72%', fraud: 62, disruption: 55 },
+                    { name: 'Chennai',   top: '78%', left: '48%', fraud: 28, disruption: 70 },
+                  ].map((city, i) => {
+                    const isHighFraud = city.fraud > 60;
+                    const isWatch = city.fraud > 40 && city.fraud <= 60;
+                    const dotColor = isHighFraud ? '#fc8181' : isWatch ? '#f6ad55' : '#68d391';
+                    const isUserCity = (insuranceData?.city || '').toLowerCase() === city.name.toLowerCase();
+                    return (
+                      <div key={i} style={{ position: 'absolute', top: city.top, left: city.left, transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+                        <div style={{
+                          width: isUserCity ? '14px' : '10px',
+                          height: isUserCity ? '14px' : '10px',
+                          borderRadius: '50%',
+                          background: dotColor,
+                          border: `2px solid white`,
+                          boxShadow: `0 0 8px ${dotColor}`,
+                          margin: '0 auto',
+                        }}/>
+                        <div style={{ fontSize: '7px', fontWeight: 700, color: '#1e3a5f', whiteSpace: 'nowrap', marginTop: '1px', textShadow: '0 1px 2px white' }}>{city.name}</div>
+                        <div style={{ fontSize: '6px', color: dotColor, fontWeight: 700 }}>{city.fraud}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Fallback SVG */}
+                <svg viewBox="0 0 550 600" style={{ display: 'none', width: '100%' }}>
+                  <rect width="550" height="600" fill="#f0f4f8" rx="8"/>
+                  <text x="275" y="300" textAnchor="middle" fontSize="14" fill="#718096">India Map</text>
+                </svg>
+              </div>
+              <div className="ade-map-legend">
+                <span><span style={{color:'#fc8181'}}>●</span> High Fraud</span>
+                <span><span style={{color:'#f6ad55'}}>●</span> Watch</span>
+                <span><span style={{color:'#68d391'}}>●</span> Safe</span>
+                <span><span style={{color:'#4facfe'}}>★</span> Your City</span>
+              </div>
+            </div>
+          </div>
                 <defs>
                   <filter id="cityGlow">
                     <feGaussianBlur stdDeviation="2" result="blur"/>
@@ -615,12 +667,6 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
                 })}
               </svg>
 
-              <div className="ade-map-legend">
-                <span><span style={{color:'#fc8181'}}>●</span> High Fraud</span>
-                <span><span style={{color:'#f6ad55'}}>●</span> Watch</span>
-                <span><span style={{color:'#68d391'}}>●</span> Safe</span>
-                <span><span style={{color:'#4facfe'}}>★</span> Your City</span>
-              </div>
             </div>
           </div>
         </div>
