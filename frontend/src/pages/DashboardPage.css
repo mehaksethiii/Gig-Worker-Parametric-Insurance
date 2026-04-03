@@ -1549,3 +1549,42 @@
 .tier-big-img { width: 100px; height: 100px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.3)); transition: transform 0.3s ease; }
 .tier-big-img:hover { transform: scale(1.08) rotate(-3deg); }
 .tier-label { font-size: 0.78rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── Game-style Loyalty Section ─────────────────────────────────────────── */
+.loyalty-game { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; padding: 0.5rem 0; }
+
+/* Hero banner */
+.lg-hero { position: relative; width: 100%; background: linear-gradient(135deg,#1a1a4e,#2d1b69,#1a3a6e); border-radius: 20px; padding: 2rem 1.5rem; display: flex; flex-direction: column; align-items: center; overflow: hidden; min-height: 220px; }
+.lg-hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%,rgba(100,150,255,0.25),transparent 70%); pointer-events: none; }
+.lg-star { position: absolute; width: 3px; height: 3px; background: white; border-radius: 50%; animation: lgTwinkle 2s ease-in-out infinite; }
+@keyframes lgTwinkle { 0%,100%{opacity:0.2;transform:scale(1)} 50%{opacity:1;transform:scale(1.5)} }
+.lg-title { color: #ffd700; font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255,215,0,0.6); z-index: 1; }
+.lg-diamond-wrap { display: flex; flex-direction: column; align-items: center; z-index: 1; }
+.lg-diamond-glow { position: absolute; width: 160px; height: 160px; background: radial-gradient(circle,rgba(79,172,254,0.4),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
+@keyframes lgPulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.15);opacity:1} }
+.lg-diamond-img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(79,172,254,0.8)) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); animation: lgFloat 3s ease-in-out infinite; }
+@keyframes lgFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.lg-pedestal { width: 100px; height: 12px; background: linear-gradient(135deg,#4facfe,#1e3a5f); border-radius: 50%; margin-top: 0.3rem; opacity: 0.7; box-shadow: 0 4px 12px rgba(79,172,254,0.5); }
+.lg-tier-name { font-size: 0.85rem; font-weight: 900; letter-spacing: 3px; color: #4facfe; margin-top: 0.4rem; text-shadow: 0 0 10px rgba(79,172,254,0.8); }
+.lg-score-badge { position: absolute; top: 1.2rem; right: 1.5rem; z-index: 2; }
+.lg-score-num { font-size: 2rem; font-weight: 900; }
+.lg-score-max { font-size: 1rem; font-weight: 600; opacity: 0.7; }
+
+/* Section title */
+.lg-section-title { font-size: 0.9rem; font-weight: 800; color: #1e3a5f; letter-spacing: 1px; align-self: flex-start; padding-left: 0.5rem; }
+
+/* Badge cards on pedestals */
+.lg-badges-row { display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; width: 100%; }
+.lg-milestones-row { gap: 0.8rem; }
+.lg-badge-card { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; min-width: 90px; }
+.lg-badge-card.locked { opacity: 0.5; }
+.lg-badge-glow { width: 70px; height: 70px; border-radius: 50%; position: absolute; filter: blur(12px); opacity: 0.5; animation: lgPulse 2.5s ease-in-out infinite; }
+.lg-badge-icon-wrap { position: relative; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.3); }
+.lg-badge-pct { font-size: 1.3rem; font-weight: 900; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.lg-badge-pedestal { width: 60px; height: 10px; background: linear-gradient(135deg,#ffd700,#cd7f32); border-radius: 50%; opacity: 0.8; box-shadow: 0 3px 8px rgba(205,127,50,0.5); }
+.lg-badge-label { font-size: 0.72rem; font-weight: 700; color: #2d3748; text-align: center; max-width: 90px; line-height: 1.3; }
+
+/* Honest Rider Badge */
+.lg-honest-wrap { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 0.5rem; }
+.lg-honest-glow { position: absolute; width: 200px; height: 200px; background: radial-gradient(circle,rgba(255,215,0,0.3),transparent 70%); border-radius: 50%; animation: lgPulse 2s ease-in-out infinite; }
+.lg-honest-svg { width: 180px; height: 160px; filter: drop-shadow(0 8px 24px rgba(255,215,0,0.5)); z-index: 1; }

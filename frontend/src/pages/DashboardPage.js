@@ -1738,127 +1738,124 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
           ];
 
           return (
-            <div className="loyalty-section">
-              <h2>🎁 Loyalty Rewards</h2>
-              <p className="section-subtitle">Honesty pays. Every honest claim builds your rewards.</p>
+            <div className="loyalty-game">
 
-              {/* Tier Card with large image */}
-              <div className="loyalty-tier-card" style={{ borderColor: tierColor }}>
-                <div className="tier-left">
-                  <div className="tier-img-wrap">
-                    <img
-                      src={
-                        trustScore >= 85
-                          ? 'https://tse1.mm.bing.net/th/id/OIP.R2qyZ1_qLTk7YAd8cBinxwHaHY?rs=1&pid=ImgDetMain&o=7&rm=3'
-                          : trustScore >= 70
-                          ? 'https://em-content.zobj.net/source/microsoft-teams/363/1st-place-medal_1f947.png'
-                          : trustScore >= 55
-                          ? 'https://em-content.zobj.net/source/microsoft-teams/363/2nd-place-medal_1f948.png'
-                          : 'https://em-content.zobj.net/source/microsoft-teams/363/3rd-place-medal_1f949.png'
-                      }
-                      alt={tier}
-                      className="tier-big-img"
-                      onError={e => { e.target.src = trustScore >= 85 ? 'https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png' : e.target.src; }}
-                    />
-                    <div className="tier-label" style={{ color: tierColor }}>{tier.replace(/💎|🥇|🥈|🥉/g,'').trim()}</div>
-                  </div>
-                  <div>
-                    <h3 style={{margin:'0 0 0.2rem',fontSize:'1rem'}}>Your Loyalty Tier</h3>
-                    <p style={{margin:0,fontSize:'0.8rem',color:'#718096'}}>Trust score · Claim history</p>
-                  </div>
-                </div>
-                <div className="tier-score" style={{ color: tierColor }}>{trustScore}<span>/100</span></div>
-              </div>
-
-              {/* Active Rewards */}
-              <div className="active-rewards">
-                <h3>🎉 Your Active Rewards</h3>
-                <div className="rewards-grid">
-                  {discount > 0 && (
-                    <div className="reward-card unlocked">
-                      <div className="reward-icon">💸</div>
-                      <div className="reward-info">
-                        <strong>{discount}% Premium Discount</strong>
-                        <p>Applied to your next renewal automatically</p>
-                      </div>
-                      <div className="reward-tag">Active</div>
-                    </div>
-                  )}
-                  {bonusCoverage > 0 && (
-                    <div className="reward-card unlocked">
-                      <div className="reward-icon">🛡️</div>
-                      <div className="reward-info">
-                        <strong>+₹{bonusCoverage} Bonus Coverage</strong>
-                        <p>Extra payout limit added to your plan</p>
-                      </div>
-                      <div className="reward-tag">Active</div>
-                    </div>
-                  )}
-                  {isHonest && (
-                    <div className="reward-card unlocked">
-                      <div className="reward-icon">⚡</div>
-                      <div className="reward-info">
-                        <strong>Fast-Track Claims</strong>
-                        <p>Your claims are reviewed first — no waiting</p>
-                      </div>
-                      <div className="reward-tag">Active</div>
-                    </div>
-                  )}
-                  {!isHonest && (
-                    <div className="reward-card locked">
-                      <div className="reward-icon">🔒</div>
-                      <div className="reward-info">
-                        <strong>Rewards Paused</strong>
-                        <p>Resolve flagged claims to unlock rewards again</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Milestones */}
-              <div className="milestones-section">
-                <h3>🏆 Milestones</h3>
-                <div className="milestones-list">
-                  {milestones.map((m, i) => (
-                    <div key={i} className={`milestone-item ${m.done ? 'done' : 'pending'}`}>
-                      <div className="milestone-check">{m.done ? '✅' : '⬜'}</div>
-                      <div className="milestone-info">
-                        <span className="milestone-label">{m.label}</span>
-                        <span className="milestone-reward">🎁 {m.reward}</span>
-                      </div>
-                      {m.done && <div className="milestone-unlocked">Unlocked</div>}
-                    </div>
+              {/* ── Hero Diamond Banner ── */}
+              <div className="lg-hero">
+                <div className="lg-hero-bg"/>
+                <div className="lg-stars">
+                  {[...Array(18)].map((_,i) => (
+                    <div key={i} className="lg-star" style={{ top:`${(i*37)%90}%`, left:`${(i*61)%100}%`, animationDelay:`${(i*0.4)%3}s` }}/>
                   ))}
                 </div>
+                <div className="lg-title">✦ Loyalty Rewards ✦</div>
+                <div className="lg-diamond-wrap">
+                  <div className="lg-diamond-glow"/>
+                  <img
+                    src="https://tse1.mm.bing.net/th/id/OIP.R2qyZ1_qLTk7YAd8cBinxwHaHY?rs=1&pid=ImgDetMain&o=7&rm=3"
+                    alt="Diamond"
+                    className="lg-diamond-img"
+                    onError={e => { e.target.src='https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png'; }}
+                  />
+                  <div className="lg-pedestal"/>
+                  <div className="lg-tier-name" style={{ color: tierColor }}>{tier.replace(/💎|🥇|🥈|🥉/g,'').trim()}</div>
+                </div>
+                <div className="lg-score-badge" style={{ color: tierColor }}>
+                  <span className="lg-score-num">{trustScore}</span>
+                  <span className="lg-score-max">/100</span>
+                </div>
               </div>
 
-              {/* Honest Rider Badge — SVG visual */}
+              {/* ── Active Rewards — pedestal cards ── */}
+              <div className="lg-section-title">✦ Your Active Rewards</div>
+              <div className="lg-badges-row">
+                {discount > 0 && (
+                  <div className="lg-badge-card">
+                    <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#68d391,#276749)' }}/>
+                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#68d391,#276749)' }}>
+                      <span className="lg-badge-pct">{discount}%</span>
+                    </div>
+                    <div className="lg-badge-pedestal"/>
+                    <div className="lg-badge-label">Premium Discount</div>
+                  </div>
+                )}
+                {bonusCoverage > 0 && (
+                  <div className="lg-badge-card">
+                    <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#4facfe,#1e3a5f)' }}/>
+                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#4facfe,#1e3a5f)' }}>
+                      <span className="lg-badge-pct">₹{bonusCoverage}</span>
+                    </div>
+                    <div className="lg-badge-pedestal"/>
+                    <div className="lg-badge-label">Bonus Coverage</div>
+                  </div>
+                )}
+                {isHonest && (
+                  <div className="lg-badge-card">
+                    <div className="lg-badge-glow" style={{ background: 'radial-gradient(circle,#f6ad55,#c05621)' }}/>
+                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#f6ad55,#c05621)' }}>
+                      <span style={{ fontSize:'1.6rem' }}>⚡</span>
+                    </div>
+                    <div className="lg-badge-pedestal"/>
+                    <div className="lg-badge-label">Fast-Track Claims</div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Milestones — pedestal cards ── */}
+              <div className="lg-section-title">✦ Milestones</div>
+              <div className="lg-badges-row lg-milestones-row">
+                {milestones.filter(m => m.done).map((m, i) => (
+                  <div key={i} className="lg-badge-card">
+                    <div className="lg-badge-glow" style={{ background: `radial-gradient(circle,${['#ffd700','#c0c0c0','#68d391','#4facfe','#fa709a','#9b59b6'][i%6]},#1e3a5f)` }}/>
+                    <div className="lg-badge-icon-wrap" style={{ background: `linear-gradient(135deg,${['#ffd700','#c0c0c0','#68d391','#4facfe','#fa709a','#9b59b6'][i%6]},#1e3a5f)` }}>
+                      <span style={{ fontSize:'1.4rem' }}>✓</span>
+                    </div>
+                    <div className="lg-badge-pedestal"/>
+                    <div className="lg-badge-label" style={{ fontSize:'0.7rem' }}>{m.label}</div>
+                  </div>
+                ))}
+                {milestones.filter(m => !m.done).map((m, i) => (
+                  <div key={i} className="lg-badge-card locked">
+                    <div className="lg-badge-icon-wrap" style={{ background: 'linear-gradient(135deg,#a0aec0,#718096)', opacity:0.5 }}>
+                      <span style={{ fontSize:'1.4rem' }}>🔒</span>
+                    </div>
+                    <div className="lg-badge-pedestal" style={{ opacity:0.4 }}/>
+                    <div className="lg-badge-label" style={{ fontSize:'0.7rem', color:'#a0aec0' }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Honest Rider Badge ── */}
               {isHonest && (
-                <div className="honest-badge-card">
-                  <svg viewBox="0 0 90 90" className="honest-badge-svg">
+                <div className="lg-honest-wrap">
+                  <div className="lg-honest-glow"/>
+                  <svg viewBox="0 0 160 140" className="lg-honest-svg">
                     <defs>
-                      <linearGradient id="hG" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f6d365"/><stop offset="100%" stopColor="#fda085"/>
+                      <linearGradient id="wingG" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#f6a800"/>
                       </linearGradient>
-                      <linearGradient id="hG2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#a8ff78"/><stop offset="100%" stopColor="#78ffd6"/>
+                      <linearGradient id="shieldG" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#68d391"/><stop offset="100%" stopColor="#276749"/>
+                      </linearGradient>
+                      <linearGradient id="rimG" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffd700"/><stop offset="100%" stopColor="#cd7f32"/>
                       </linearGradient>
                     </defs>
+                    {/* Left wing */}
+                    <path d="M55,70 Q30,50 15,30 Q25,45 28,60 Q20,55 10,50 Q22,65 30,75 Q22,72 14,72 Q26,80 38,82 Q30,85 24,90 Q38,88 50,84 Z" fill="url(#wingG)"/>
+                    {/* Right wing */}
+                    <path d="M105,70 Q130,50 145,30 Q135,45 132,60 Q140,55 150,50 Q138,65 130,75 Q138,72 146,72 Q134,80 122,82 Q130,85 136,90 Q122,88 110,84 Z" fill="url(#wingG)"/>
+                    {/* Gold rim */}
+                    <path d="M80,18 L105,32 L105,65 Q105,88 80,100 Q55,88 55,65 L55,32 Z" fill="url(#rimG)" stroke="#cd7f32" strokeWidth="2"/>
                     {/* Shield */}
-                    <path d="M45,8 L72,20 L72,48 Q72,68 45,80 Q18,68 18,48 L18,20 Z" fill="url(#hG)" stroke="#f6a800" strokeWidth="2"/>
-                    <path d="M45,14 L66,24 L66,48 Q66,64 45,74 Q24,64 24,48 L24,24 Z" fill="url(#hG2)" opacity="0.6"/>
+                    <path d="M80,24 L100,36 L100,64 Q100,84 80,94 Q60,84 60,64 L60,36 Z" fill="url(#shieldG)"/>
                     {/* Checkmark */}
-                    <path d="M32,45 L41,54 L58,36" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                    {/* Stars */}
-                    {[0,1,2].map(i => (
-                      <text key={i} x={28+i*17} y="88" textAnchor="middle" fontSize="10">⭐</text>
-                    ))}
+                    <path d="M70,60 L77,68 L92,50" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    {/* Pedestal */}
+                    <ellipse cx="80" cy="118" rx="38" ry="8" fill="url(#rimG)" opacity="0.8"/>
+                    <rect x="68" y="102" width="24" height="16" rx="3" fill="url(#rimG)"/>
+                    <text x="80" y="135" textAnchor="middle" fontSize="9" fill="#cd7f32" fontWeight="900" letterSpacing="1">HONEST RIDER BADGE</text>
                   </svg>
-                  <div>
-                    <h3>Honest Rider Badge</h3>
-                    <p>Zero fraud flags. RideShield trusts you completely. Keep it up — your rewards keep growing.</p>
-                  </div>
                 </div>
               )}
             </div>
