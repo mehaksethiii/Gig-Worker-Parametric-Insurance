@@ -1,13 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { Shield, FileCheck, Wallet, TrendingUp, X, Bike, Package, MapPin, Navigation, CloudRain, Sun } from 'lucide-react';
+import { Shield, FileCheck, Wallet, TrendingUp, X } from 'lucide-react';
 import './HomePage.css';
 import React, { useState, useEffect } from 'react';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const fullText = "Protecting Gig Workers from Income Loss";
-  const [displayText, setDisplayText] = useState("");
 
   useEffect(() => {
     // Scroll Animation Observer
@@ -30,21 +28,6 @@ const HomePage = () => {
     });
 
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let i = 0;
-
-    const interval = setInterval(() => {
-      setDisplayText(fullText.slice(0, i + 1));
-      i++;
-
-      if (i === fullText.length) {
-        clearInterval(interval);
-      }
-    }, 50);
-
-    return () => clearInterval(interval);
   }, []);
 
   return (

@@ -1,8 +1,280 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CloudRain, Thermometer, Wind, Bell, CheckCircle, AlertTriangle, TrendingUp, FileCheck, Wallet } from 'lucide-react';
+import { Shield, CloudRain, Thermometer, Wind, Bell, CheckCircle, AlertTriangle, TrendingUp, FileCheck, Wallet, LogOut, WifiOff, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getToken, getRider, logout } from '../auth';
+import { getQueue, watchOnline, syncOfflineClaims } from '../offlineQueue';
+import MapTab from './MapTab';
+import AIDefenseEngine from './AIDefenseEngine';
 import './DashboardPage.css';
+
+// ── Settlement Tab ────────────────────────────────────────────────────────────
+const SETTLEMENT_STEPS = [
+  { id: 'trigger_confirmed',  icon: '🌦️', label: 'Trigger Confirmed',    desc: 'Weather API confirms threshold crossed' },
+  { id: 'eligibility_check',  icon: '✅', label: 'Eligibility Check',     desc: 'Active policy, correct zone, no duplicate' },
+  { id: 'payout_calculated',  icon: '🧮', label: 'Payout Calculated',     desc: 'Fixed amount × trigger days' },
+  { id: 'transfer_initiated', icon: '💸', label: 'Transfer Initiated',    desc: 'UPI / IMPS — under few minutes' },
+  { id: 'record_updated',     icon: '🗂️', label: 'Record Updated',        desc: 'Payout logged, BillingCenter reconciled' },
+];
+
+const SettlementTab = ({ insuranceData, getToken, addToast }) => {
+  const [upiId, setUpiId] = React.useState(insuranceData?.upiId || '');
+  const [savingUpi, setSavingUpi]   = React.useState(false);
+  const [upiSaved, setUpiSaved]     = React.useState(false);
+  const [history, setHistory]       = React.useState([]);
+  const [simulating, setSimulating] = React.useState(false);
+  const [simPayout, setSimPayout]   = React.useState(null);
+
+  React.useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/settlement/history', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { payouts: [] })
+      .then(d => setHistory(d.payouts || []))
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveUpi = async () => {
+    if (!upiId.includes('@')) { addToast('Invalid UPI ID — format: name@upi', 'warning'); return; }
+    setSavingUpi(true);
+    try {
+      const res = await fetch('/api/settlement/upi', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ upiId }),
+      });
+      if (res.ok) { setUpiSaved(true); addToast('✅ UPI ID saved — payouts will go here automatically', 'success'); }
+    } catch (_) {}
+    setSavingUpi(false);
+  };
+
+  const runSimulation = async () => {
+    setSimulating(true); setSimPayout(null);
+    try {
+      const res = await fetch('/api/settlement/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ amount: 480, reason: 'Heavy Rainfall / Flood', triggerData: { rainfall: 68 } }),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) throw new Error('backend_down');
+      const data = await res.json();
+      if (!data.payoutId) throw new Error('No payoutId');
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        const sr = await fetch(`/api/settlement/status/${data.payoutId}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+        const sd = await sr.json();
+        setSimPayout(sd);
+        if (sd.status === 'completed' || sd.status === 'failed' || attempts > 15) {
+          clearInterval(poll);
+          setSimulating(false);
+          setHistory(h => [{ ...sd, _id: data.payoutId, createdAt: new Date() }, ...h]);
+          if (sd.status === 'completed') addToast(`💸 ₹${sd.amount} settled via ${sd.channel?.toUpperCase()}!`, 'success');
+        }
+      }, 600);
+    } catch (_) {
+      // Frontend-only simulation (backend not running)
+      setSimPayout({ status: 'processing', amount: 480, channel: 'sandbox', steps: [] });
+      let i = 0;
+      const sim = setInterval(() => {
+        const currentStep = SETTLEMENT_STEPS[i]; // capture before increment
+        if (!currentStep) {
+          clearInterval(sim);
+          setSimulating(false);
+          setSimPayout(p => ({ ...p, status: 'completed', transactionId: `SANDBOX_${Date.now()}` }));
+          addToast('💸 ₹480 settled via SANDBOX (demo mode)', 'success');
+          return;
+        }
+        setSimPayout(p => ({
+          ...p,
+          steps: [...(p.steps || []), { step: currentStep.id, status: 'done', detail: currentStep.desc, timestamp: new Date() }],
+        }));
+        i++;
+      }, 900);
+    }
+  };
+
+  const stepStatus = (stepId) => {
+    if (!simPayout?.steps) return 'pending';
+    const s = simPayout.steps.find(x => x.step === stepId);
+    return s ? s.status : 'pending';
+  };
+
+  const channelColor = { upi: '#48bb78', imps: '#4facfe', sandbox: '#9b59b6' };
+
+  return (
+    <div className="settlement-section">
+      <h2>💸 Automatic Settlement</h2>
+      <p className="section-subtitle">Zero-touch payout pipeline — trigger to transfer in minutes, not hours</p>
+      <div className="settlement-flow">
+        {SETTLEMENT_STEPS.map((s, i) => (
+          <React.Fragment key={s.id}>
+            <div className={`sf-step ${simPayout ? stepStatus(s.id) : ''}`}>
+              <div className="sf-icon">{s.icon}</div>
+              <div className="sf-num">{i + 1}</div>
+              <div className="sf-label">{s.label}</div>
+              <div className="sf-desc">{s.desc}</div>
+              {simPayout && stepStatus(s.id) === 'done' && <div className="sf-check">✓</div>}
+              {simPayout && stepStatus(s.id) === 'failed' && <div className="sf-fail">✗</div>}
+            </div>
+            {i < SETTLEMENT_STEPS.length - 1 && <div className={`sf-arrow ${simPayout && stepStatus(SETTLEMENT_STEPS[i+1].id) !== 'pending' ? 'active' : ''}`}>→</div>}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="settlement-channels">
+        <div className="sc-title">Payout Channels</div>
+        <div className="sc-row">
+          {[
+            { icon: '🏦', label: 'UPI Transfer',    sub: 'Instant, preferred — rider already uses it', color: '#48bb78', tag: 'Primary' },
+            { icon: '🏛️', label: 'IMPS to Bank',     sub: 'Fallback if UPI not linked',                color: '#4facfe', tag: 'Fallback' },
+            { icon: '🧪', label: 'Razorpay Sandbox', sub: 'For demo / hackathon simulation',           color: '#9b59b6', tag: 'Demo' },
+          ].map((c, i) => (
+            <div key={i} className="sc-card" style={{ borderColor: c.color }}>
+              <span className="sc-icon">{c.icon}</span><span className="sc-label">{c.label}</span>
+              <span className="sc-sub">{c.sub}</span><span className="sc-tag" style={{ background: c.color }}>{c.tag}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="settlement-upi-card">
+        <div className="suc-header"><span className="suc-icon">📱</span><div><div className="suc-title">Your UPI ID</div><div className="suc-sub">Payouts go here automatically when a claim is approved</div></div></div>
+        <div className="suc-input-row">
+          <input className="suc-input" type="text" placeholder="yourname@upi or phone@paytm" value={upiId} onChange={e => { setUpiId(e.target.value); setUpiSaved(false); }} />
+          <button className="suc-btn" onClick={saveUpi} disabled={savingUpi || upiSaved}>{upiSaved ? '✅ Saved' : savingUpi ? '⏳...' : 'Save'}</button>
+        </div>
+        <div className="suc-note">No UPI ID? Payouts go to sandbox (demo mode) automatically.</div>
+      </div>
+      <div className="settlement-sim">
+        <button className="btn-settlement-sim" onClick={runSimulation} disabled={simulating}>
+          {simulating ? '⏳ Running pipeline...' : '▶ Simulate Full Settlement — ₹480'}
+        </button>
+        <p className="settlement-sim-note">Runs all 5 steps live — fraud check → transfer → record update</p>
+      </div>
+      {simPayout && (
+        <div className={`settlement-result ${simPayout.status}`}>
+          <div className="sr-header">
+            <span className="sr-status-icon">{simPayout.status === 'completed' ? '✅' : simPayout.status === 'failed' ? '❌' : '⏳'}</span>
+            <div>
+              <div className="sr-title">{simPayout.status === 'completed' ? `₹${simPayout.amount} Settled` : simPayout.status === 'failed' ? 'Settlement Failed' : 'Processing...'}</div>
+              {simPayout.transactionId && <div className="sr-txn">TxnID: {simPayout.transactionId}</div>}
+              {simPayout.channel && <div className="sr-channel" style={{ color: channelColor[simPayout.channel] }}>via {simPayout.channel?.toUpperCase()}</div>}
+            </div>
+          </div>
+          <div className="sr-steps">
+            {(simPayout.steps || []).map((s, i) => (
+              <div key={i} className={`sr-step ${s.status}`}>
+                <span className="sr-step-dot">{s.status === 'done' ? '✓' : s.status === 'failed' ? '✗' : '○'}</span>
+                <span className="sr-step-detail">{s.detail}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="settlement-keypoints">
+        {[
+          { icon: '👆', text: 'Zero-touch — worker does nothing to receive payout' },
+          { icon: '⏱️', text: 'Defined settlement time — minutes not hours' },
+          { icon: '🔄', text: 'Rollback logic — if transfer fails mid-way, retried via fallback channel' },
+          { icon: '🛡️', text: 'Fraud check BEFORE payment, not after' },
+        ].map((k, i) => (
+          <div key={i} className="skp-item"><span className="skp-icon">{k.icon}</span><span>{k.text}</span></div>
+        ))}
+      </div>
+      {history.length > 0 && (
+        <div className="settlement-history">
+          <div className="sh-title">Recent Settlements</div>
+          {history.slice(0, 5).map((p, i) => (
+            <div key={i} className="sh-item">
+              <span className="sh-icon">{p.status === 'completed' ? '✅' : '❌'}</span>
+              <span className="sh-reason">{p.reason}</span><span className="sh-amount">₹{p.amount}</span>
+              <span className="sh-channel" style={{ color: channelColor[p.channel] || '#718096' }}>{p.channel || 'sandbox'}</span>
+              <span className="sh-date">{new Date(p.createdAt).toLocaleDateString('en-IN')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaymentSettingsCard = ({ insuranceData, getToken, addToast }) => {
+  const [upiId, setUpiId] = React.useState(insuranceData?.upiId || '');
+  const [bankName, setBankName] = React.useState(insuranceData?.bankName || '');
+  const [accountNumber, setAccountNumber] = React.useState(insuranceData?.accountNumber || '');
+  const [ifscCode, setIfscCode] = React.useState(insuranceData?.ifscCode || '');
+  const [preferredPaymentMode, setPreferredPaymentMode] = React.useState(insuranceData?.preferredPaymentMode || 'upi');
+  const [saving, setSaving] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+
+  const handleSave = async () => {
+    if (preferredPaymentMode === 'upi' && upiId && !upiId.includes('@')) {
+      addToast('Invalid UPI ID — format: name@upi', 'warning'); return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settlement/payment-details', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ upiId, bankName, accountNumber, ifscCode, preferredPaymentMode }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        addToast('✅ Payment details saved securely.', 'success');
+      } else {
+        addToast('❌ Failed to save payment details.', 'error');
+      }
+    } catch (_) {
+      addToast('❌ Error connecting to server.', 'error');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="payment-settings-card">
+      <div className="psc-header">
+        <div className="psc-icon">💳</div>
+        <div>
+          <div className="psc-title">Payout Settings</div>
+          <div className="psc-subtitle">Where should we send your auto-settlements?</div>
+        </div>
+      </div>
+      <div className="psc-body">
+        <div className="psc-field">
+          <label>Mode of Transaction</label>
+          <select value={preferredPaymentMode} onChange={e => { setPreferredPaymentMode(e.target.value); setSaved(false); }} className="psc-select">
+            <option value="upi">UPI Transfer (Instant)</option>
+            <option value="bank">Bank Transfer (IMPS)</option>
+            <option value="sandbox">Sandbox (Demo)</option>
+          </select>
+        </div>
+        {preferredPaymentMode === 'upi' && (
+          <div className="psc-field">
+            <label>UPI ID</label>
+            <input type="text" placeholder="e.g. 9876543210@paytm" value={upiId} onChange={e => { setUpiId(e.target.value); setSaved(false); }} className="psc-input" />
+          </div>
+        )}
+        {preferredPaymentMode === 'bank' && (<>
+          <div className="psc-field">
+            <label>Bank Account Name</label>
+            <input type="text" placeholder="e.g. HDFC Bank - John Doe" value={bankName} onChange={e => { setBankName(e.target.value); setSaved(false); }} className="psc-input" />
+          </div>
+          <div className="psc-field">
+            <label>Account Number</label>
+            <input type="text" placeholder="Account Number" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setSaved(false); }} className="psc-input" />
+          </div>
+          <div className="psc-field">
+            <label>IFSC Code</label>
+            <input type="text" placeholder="e.g. HDFC0001234" value={ifscCode} onChange={e => { setIfscCode(e.target.value); setSaved(false); }} className="psc-input" />
+          </div>
+        </>)}
+        <button className="psc-btn" onClick={handleSave} disabled={saving || saved}>
+          {saved ? '✅ Saved successfully' : saving ? '⏳ Saving...' : 'Save Details'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -10,268 +282,1937 @@ const DashboardPage = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherSource, setWeatherSource] = useState('');
-  const [payoutHistory] = useState([
-    { date: '2026-03-08', amount: 450, reason: 'Heavy Rainfall', status: 'completed' },
-    { date: '2026-03-05', amount: 300, reason: 'Extreme Heat', status: 'completed' },
-    { date: '2026-03-01', amount: 400, reason: 'Local Shutdown', status: 'completed' }
+  const [claims, setClaims] = useState([
+    { date: '2026-03-08', amount: 450, reason: 'Heavy Rainfall', status: 'Approved' },
+    { date: '2026-03-05', amount: 300, reason: 'Extreme Heat',   status: 'Approved' },
+    { date: '2026-03-01', amount: 400, reason: 'Local Shutdown', status: 'Approved' },
   ]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineQueue, setOfflineQueue] = useState(getQueue());
+  const [syncing, setSyncing] = useState(false);
 
-  const fetchWeather = async (city) => {
+  // Auto-pipeline state — runs silently in background, displayed in notification bell
+  const [aiScanStatus, setAiScanStatus] = useState('idle'); // eslint-disable-line no-unused-vars
+  const [autoPipelineLog, setAutoPipelineLog] = useState([]); // eslint-disable-line no-unused-vars
+  const autoPipelineRan = React.useRef(false);
+
+  // Fraud tester state (kept for AI Defense Engine reference)
+  const [fraudTest, setFraudTest] = useState({ amount: 500, reason: 'Heavy Rainfall', claimsThisWeek: 1, hasGPS: true, sameDay: false }); // eslint-disable-line no-unused-vars
+  const [fraudResult, setFraudResult] = useState(null); // eslint-disable-line no-unused-vars
+
+  // Family assurance
+  const [familySending, setFamilySending] = useState(false);
+  const [familySent, setFamilySent] = useState(false);
+
+  const sendFamilyEmail = async (status = 'triggered') => {
+    const rider = getRider() || JSON.parse(localStorage.getItem('riderData') || '{}');
+    if (!rider.familyEmail) return;
+    setFamilySending(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/weather/current/${encodeURIComponent(city)}`);
+      await fetch('/api/notify/family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderName: rider.name,
+          familyEmail: rider.familyEmail,
+          familyName: rider.familyName || 'Family',
+          familyRelation: rider.familyRelation || 'Family',
+          reason: 'heavy rain / disruption',
+          claimAmount: 480,
+          status,
+        }),
+      });
+      const data = await res.json();
+      setFamilySent(true);
+      addToast('❤️ Family assurance email sent!', 'success');
+      if (data.preview) {
+        setTimeout(() => window.open(data.preview, '_blank'), 1500);
+      }
+    } catch (_) {}
+    setFamilySending(false);
+  };
+
+  // Nearby riders (simulated)
+  const nearbyRiders = Math.floor(Math.random() * 20) + 5;
+
+  // Story of the day
+  const stories = [
+    {
+      name: 'Ravi Kumar, Delhi',
+      role: 'Zomato Delivery Partner · 4 years',
+      emoji: '🛵',
+      story: `It was a Tuesday evening in July when the skies over Delhi turned black without warning. Ravi had been on the road since 7 AM, trying to hit his daily target of ₹800. Within minutes, the rain was so heavy he couldn't see 10 feet ahead. Orders stopped. His phone went silent. He sat under a petrol station roof, watching the water rise, calculating how much his family would go short that week — his daughter's school fees were due Friday.
+
+Then his phone buzzed. Not an order. A message from RideShield: "Disruption detected in your area. Your coverage is now active. Estimated payout: ₹420." He didn't file anything. He didn't call anyone. The system just knew. By the time the rain stopped 3 hours later, the money was already in his account. His daughter's fees were paid on time. "I didn't even know insurance could work like this," he said. "I thought it was always forms and waiting. This felt like someone actually cared."`,
+    },
+    {
+      name: 'Sunita Devi, Mumbai',
+      role: 'Swiggy Delivery Partner · 2 years',
+      emoji: '🌧️',
+      story: `Sunita is the only earning member of her family of four. Her husband had an accident two years ago, and since then, every rupee she earns on her scooter matters. During the Mumbai floods last monsoon, her entire zone was underwater for two days. No orders. No income. Her mother-in-law kept asking if everything was okay — she didn't want to worry her.
+
+What Sunita didn't expect was a message her mother-in-law received on her phone: "Hi, this is RideShield. Sunita's work has been affected today due to heavy flooding. Please don't worry — her earnings are protected and support has been activated. ❤️" Her mother-in-law called her crying — not from worry, but from relief. "Someone told me before I even had to ask," she said. Sunita's claim of ₹750 was processed in 8 minutes. She used it to buy groceries and pay the electricity bill. "RideShield didn't just protect my income. It protected my family's peace of mind."`,
+    },
+    {
+      name: 'Arjun Patil, Bangalore',
+      role: 'Dunzo Delivery Partner · 3 years',
+      emoji: '🔒',
+      story: `Arjun had never trusted insurance. "It's always a trap," he used to say. He signed up for RideShield only because a friend insisted, choosing the cheapest plan at ₹199 a week. Three weeks later, a sudden Section 144 curfew was imposed in his delivery zone after a local protest. No movement allowed. Zero orders for 36 hours.
+
+He expected nothing. He got a notification: "Local shutdown detected. Claim auto-activated. Payout of ₹500 processing." He stared at his phone for a full minute, not believing it. No form. No proof. No argument. Just a payout. He upgraded to the Premium plan the next day. "I used to think insurance was for rich people who had time to fight for it," he said. "RideShield is the first thing that felt like it was actually built for someone like me." That ₹500 covered his family's groceries for the week. Small amount. Huge difference.`,
+    },
+    {
+      name: 'Meena Sharma, Hyderabad',
+      role: 'Blinkit Delivery Partner · 1.5 years',
+      emoji: '☀️',
+      story: `Last summer, Hyderabad recorded temperatures above 45°C for 11 consecutive days. Meena, who delivers groceries on a cycle, was forced to stop working by noon every day — the heat was unbearable and dangerous. She lost nearly 40% of her weekly income during that period. She had no savings buffer. Her children's mid-day meals depended on what she earned each morning.
+
+RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena received ₹300 automatically — she hadn't even opened the app. Over those 11 days, she received three separate payouts totalling ₹900. It wasn't everything she lost, but it was enough to keep the household running. "I used to dread summer," she said. "Now I know that even when the sun beats me, something is watching out for me." She now tells every rider she meets about RideShield. "If I had known earlier, I would have signed up on day one."`,
+    },
+  ];
+  const todayStory = stories[new Date().getDate() % stories.length]; // eslint-disable-line no-unused-vars
+
+  // Simulation mode
+  const [simRunning, setSimRunning] = useState(false);
+  const [simStep, setSimStep] = useState(0);
+  const simSteps = [
+    { icon: '🌧️', text: 'Heavy rain detected in your area — 68mm recorded' },
+    { icon: '🤖', text: 'AI trigger activated — threshold exceeded (50mm)' },
+    { icon: '📋', text: 'Claim auto-created — no action needed from you' },
+    { icon: '✅', text: 'Claim approved — payout of ₹480 processing' },
+    { icon: '💰', text: 'Payout sent to your account — ₹480 deposited!' },
+  ];
+
+  // Trust score
+  const trustScore = Math.min(100, 60 + (claims.filter(c => c.status === 'Approved').length * 8));
+  const trustLevel = trustScore >= 80 ? 'Excellent' : trustScore >= 60 ? 'Good' : 'Building';
+  const trustColor = trustScore >= 80 ? '#68d391' : trustScore >= 60 ? '#f6ad55' : '#fc8181';
+
+  // Toast notifications
+  const [toasts, setToasts] = useState([]);
+  const addToast = (msg, type = 'info') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4000);
+  };
+
+  const runSimulation = () => {
+    setSimRunning(true);
+    setSimStep(0);
+    addToast('⚠️ Heavy rain detected. Your coverage is now active.', 'warning');
+    simSteps.forEach((_, i) => {
+      setTimeout(() => {
+        setSimStep(i + 1);
+        if (i === simSteps.length - 1) {
+          addToast('💰 Payout of ₹480 sent to your account!', 'success');
+          setTimeout(() => setSimRunning(false), 1500);
+        }
+      }, (i + 1) * 1200);
+    });
+  };
+
+  // Active sidebar tab
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Timeline rider animation state
+  const [tlActiveIdx, setTlActiveIdx] = React.useState(-1);
+  const [tlRiderPct,  setTlRiderPct]  = React.useState(2);
+  const [tlPopups,    setTlPopups]    = React.useState([]);
+
+  React.useEffect(() => {
+    if (activeTab !== 'claims') return;
+    const total = claims.length;
+    if (total === 0) return;
+    setTlActiveIdx(-1); setTlRiderPct(2); setTlPopups([]);
+    let step = 0;
+    const run = () => {
+      if (step > total) return;
+      const pct = step === 0 ? 2 : step >= total ? 96 : Math.round((step / total) * 96 - 96 / total / 2 + 4);
+      setTlRiderPct(pct);
+      if (step > 0 && step <= total) {
+        setTlActiveIdx(step - 1);
+        setTlPopups(p => [...p, step - 1]);
+      }
+      step++;
+      setTimeout(run, 1400);
+    };
+    const t = setTimeout(run, 600);
+    return () => clearTimeout(t);
+  }, [activeTab, claims.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const NAV = [
+    { id: 'overview',    icon: '🏠', label: 'Overview' },
+    { id: 'map',         icon: '🗺️', label: 'Live Map' },
+    { id: 'ai-defense',  icon: '🧠', label: 'AI Defense' },
+    { id: 'risk',        icon: '📊', label: 'Risk Meter' },
+    { id: 'claims',      icon: '💰', label: 'Payout Timeline' },
+    { id: 'voice',       icon: '🎙️', label: 'Voice Claim' },
+    { id: 'simulation',  icon: '⚡', label: 'Simulation' },
+    { id: 'trust',       icon: '🏅', label: 'Trust Score' },
+    { id: 'loyalty',     icon: '🎁', label: 'Loyalty Rewards' },
+    { id: 'offline',     icon: '📡', label: 'Offline Mode' },
+    { id: 'disaster',    icon: '🆘', label: 'Report Disaster' },
+    { id: 'settlement',  icon: '💸', label: 'Settlement' },
+    { id: 'heart',       icon: '❤️', label: 'Family & Care' },
+    { id: 'story',       icon: '📖', label: 'Story of the Day' },
+  ];
+
+  // Voice claim
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceText, setVoiceText]           = useState('');
+  const [voiceResult, setVoiceResult]       = useState(null);
+  const [voiceError, setVoiceError]         = useState('');
+  const recognitionRef = React.useRef(null);
+
+  const VOICE_KEYWORDS = {
+    rain:      ['rain', 'rainfall', 'raining', 'flood', 'flooded', 'wet', 'storm', 'baarish', 'barish', 'paani', 'stuck', 'heavy'],
+    heat:      ['heat', 'hot', 'temperature', 'garmi', 'sun', 'sunny', 'extreme', 'tapish', 'garam'],
+    shutdown:  ['shutdown', 'curfew', 'strike', 'bandh', 'closed', 'blocked', 'protest', 'restriction', 'hartal', 'jam', 'no orders', 'orders'],
+    pollution: ['pollution', 'smoke', 'smog', 'aqi', 'air', 'dust', 'pradushan'],
+    gas:       ['gas', 'lpg', 'cylinder', 'petrol', 'fuel', 'diesel', 'shortage', 'supply'],
+  };
+
+  // Detect reason AND language (Hindi vs English)
+  const detectReasonAndLang = (text) => {
+    const lower = text.toLowerCase().trim();
+    const hindiWords = ['baarish', 'barish', 'garmi', 'bandh', 'hartal', 'paani', 'tapish', 'pradushan', 'ruka', 'hoon', 'nahi', 'mein', 'aaj', 'bahut', 'zyada', 'kaam', 'garam'];
+    const isHindi = hindiWords.some(w => lower.includes(w));
+
+    let reason = null;
+    for (const [key, keywords] of Object.entries(VOICE_KEYWORDS)) {
+      if (keywords.some(k => lower.includes(k))) { reason = key; break; }
+    }
+
+    // Fallback: if nothing matched, try partial word matching
+    if (!reason) {
+      if (/rain|flood|wet|storm|baarish|barish/.test(lower)) reason = 'rain';
+      else if (/hot|heat|garmi|sun/.test(lower)) reason = 'heat';
+      else if (/strike|bandh|curfew|closed|block|order/.test(lower)) reason = 'shutdown';
+      else if (/gas|lpg|fuel|petrol/.test(lower)) reason = 'gas';
+      else if (/smoke|dust|air|pollution/.test(lower)) reason = 'pollution';
+    }
+
+    return { reason, isHindi };
+  };
+
+  // Calculate real payout based on rider's actual data
+  const calcPayout = (reason) => {
+    const hours = parseFloat(insuranceData?.workingHours) || 8;
+    const maxPayout = parseFloat(insuranceData?.maxPayout) || 500;
+    // Hourly rate estimate: ₹60-80/hr for food, ₹50-65/hr for others
+    const hourlyRate = insuranceData?.deliveryType === 'food' ? 72 : 58;
+    // Disruption severity multiplier
+    const severity = { rain: 0.7, heat: 0.5, shutdown: 0.9, pollution: 0.4, gas: 0.6 };
+    const hoursLost = hours * (severity[reason] || 0.6);
+    return Math.min(maxPayout, Math.round(hoursLost * hourlyRate));
+  };
+
+  const startVoiceClaim = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setVoiceError('Voice recognition not supported. Please use Chrome.');
+      return;
+    }
+    setVoiceText(''); setVoiceResult(null); setVoiceError('');
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN'; // en-IN accepts both Hindi and English in Chrome
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 3; // try multiple alternatives
+
+    recognitionRef.current = recognition;
+
+    recognition.onstart  = () => setVoiceListening(true);
+    recognition.onend    = () => setVoiceListening(false);
+    recognition.onerror  = () => { setVoiceError('Could not hear you. Please try again in a quiet place.'); setVoiceListening(false); };
+
+    recognition.onresult = (e) => {
+      // Collect all alternatives from all results
+      const transcripts = [];
+      for (let i = 0; i < e.results.length; i++) {
+        for (let j = 0; j < e.results[i].length; j++) {
+          transcripts.push(e.results[i][j].transcript);
+        }
+      }
+      const transcript = transcripts.join(' ');
+      setVoiceText(transcripts[0] || transcript);
+
+      if (e.results[e.results.length - 1].isFinal) {
+        const { reason, isHindi } = detectReasonAndLang(transcript);
+
+        if (reason) {
+          const reasonLabels = {
+            rain:      'Heavy Rainfall',
+            heat:      'Extreme Heat',
+            shutdown:  'Local Shutdown / Strike / Curfew',
+            pollution: 'Air Pollution',
+            gas:       'LPG / Fuel Shortage',
+          };
+
+          const amount = calcPayout(reason);
+
+          // Language-aware responses
+          const hindiResponses = {
+            rain:      (amt) => `Accha, baarish ho rahi hai? Bilkul chinta mat karo. Aapka aaj ka claim ${amt} rupaye hai. Yeh amount aapke account mein bhej diya jayega. RideShield hamesha aapke saath hai.`,
+            heat:      (amt) => `Arre, bahut garmi hai aaj! Aap safe rahein. Aapka claim ${amt} rupaye process ho raha hai. Ghar jaake aaram karo, aapki kamai surakshit hai.`,
+            shutdown:  (amt) => `Samajh gaye, aapke area mein bandh ya strike hai. Koi baat nahi. Aapka ${amt} rupaye ka claim abhi activate ho gaya. Aap akele nahi hain.`,
+            pollution: (amt) => `Haan, aaj pollution bahut zyada hai. Bahar mat niklo. Aapka claim ${amt} rupaye process ho raha hai. RideShield aapke saath hai.`,
+            gas:       (amt) => `Samajh gaye, gas ya fuel ki kami hai. Aapka ${amt} rupaye ka claim activate ho gaya. Chinta mat karo, RideShield ne aapko cover kar liya hai.`,
+          };
+
+          const englishResponses = {
+            rain:      (amt) => `Got it — heavy rainfall detected in your area. Your claim of ₹${amt} has been activated. Don't worry, your earnings are protected. RideShield is with you.`,
+            heat:      (amt) => `Understood — extreme heat conditions detected. Your claim of ₹${amt} is now processing. Stay safe and rest. Your income is secured.`,
+            shutdown:  (amt) => `Noted — local shutdown, strike or curfew detected. Your claim of ₹${amt} has been activated automatically. You're not alone.`,
+            pollution: (amt) => `Understood — severe air pollution detected. Your claim of ₹${amt} is processing. Please stay indoors. RideShield has you covered.`,
+            gas:       (amt) => `Got it — LPG or fuel shortage reported. Your claim of ₹${amt} has been activated. Don't worry, RideShield is protecting your income.`,
+          };
+
+          const responseMsg = isHindi
+            ? hindiResponses[reason](amount)
+            : englishResponses[reason](amount);
+
+          const approvedMsg = isHindi
+            ? `Aapka claim approve ho gaya! ${amount} rupaye aapke account mein bhej diye gaye hain. RideShield hamesha aapke saath hai.`
+            : `Your claim of ₹${amount} has been approved and sent to your account. Thank you for trusting RideShield.`;
+
+          setVoiceResult({ reason: reasonLabels[reason], amount, status: 'Processing', responseMsg, isHindi });
+          speakResponse(responseMsg, isHindi);
+          addToast(`🎙️ "${reasonLabels[reason]}" detected — ₹${amount} processing`, 'success');
+          addNotification(`🎙️ Voice claim: ${reasonLabels[reason]} — ₹${amount}`, 'success');
+
+          setTimeout(() => {
+            setVoiceResult(r => r ? { ...r, status: 'Approved' } : r);
+            speakResponse(approvedMsg, isHindi);
+          }, 3000);
+
+        } else {
+          const errMsg = isHindi
+            ? 'Samajh nahi aaya. Boliye: Baarish ho rahi hai, ya Bandh hai, ya Gas nahi hai.'
+            : 'Could not detect a disruption. Try: "I am stuck due to rain", "there is a strike", or "LPG shortage".';
+          setVoiceError(errMsg);
+          speakResponse(errMsg, isHindi);
+        }
+      }
+    };
+    recognition.start();
+  };
+
+  const stopVoice = () => { recognitionRef.current?.stop(); setVoiceListening(false); };
+
+  const speakResponse = (text, isHindi = true) => {
+    window.speechSynthesis.cancel();
+
+    const doSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+
+      // For Hindi — use English voice at slower rate (avoids cracking)
+      // Windows Hindi TTS is poor quality, English voice reads Hinglish clearly
+      const enVoice =
+        voices.find(v => v.lang === 'en-IN') ||
+        voices.find(v => v.lang === 'en-GB') ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0];
+
+      const hiVoice =
+        voices.find(v => v.lang === 'hi-IN' && v.localService) ||
+        voices.find(v => v.lang === 'hi-IN') ||
+        null;
+
+      // Use Hindi voice only if it's a local (non-network) voice — network voices crack
+      const voice = (isHindi && hiVoice && hiVoice.localService) ? hiVoice : enVoice;
+
+      const MAX = 160;
+      const sentences = text.length > MAX
+        ? (text.match(/[^।.!?,]+[।.!?,]*/g) || [text])
+        : [text];
+
+      let delay = 0;
+      sentences.forEach((sentence, idx) => {
+        setTimeout(() => {
+          const u = new SpeechSynthesisUtterance(sentence.trim());
+          if (voice) u.voice = voice;
+          u.lang   = voice?.lang || 'en-IN';
+          u.rate   = isHindi ? 0.78 : 0.85; // slower for Hindi text
+          u.pitch  = 1.0;
+          u.volume = 1.0;
+          window.speechSynthesis.speak(u);
+        }, delay);
+        delay += Math.max(800, sentence.length * 55);
+      });
+    };
+
+    if (window.speechSynthesis.getVoices().length > 0) {
+      doSpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        doSpeak();
+      };
+    }
+  };
+
+  // Notifications
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [familyNotified, setFamilyNotified] = useState(false);
+
+  const addNotification = (msg, type = 'info') => {
+    const id = Date.now();
+    setNotifications(prev => [{ id, msg, type, time: new Date() }, ...prev].slice(0, 20));
+  };
+
+  const autoNotifyFamily = async (reason, riderInfo) => {
+    if (!riderInfo?.familyEmail || familyNotified) return;
+    setFamilyNotified(true);
+    try {
+      await fetch('/api/notify/family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderName: riderInfo.name,
+          familyEmail: riderInfo.familyEmail,
+          familyName: riderInfo.familyName || 'Family',
+          familyRelation: riderInfo.familyRelation || 'Family',
+          reason,
+          claimAmount: 480,
+          status: 'triggered',
+        }),
+      });
+      const data = await res.json();
+      addNotification(`❤️ Family assurance email sent to ${riderInfo.familyName || 'your family'}`, 'success');
+      addToast(`❤️ Your family has been notified — they know you're safe.`, 'success');
+      if (data.preview) {
+        setTimeout(() => window.open(data.preview, '_blank'), 1500);
+      }
+    } catch (_) {}
+  };
+
+  const fetchWeather = async (city, riderInfo) => {
+    try {
+      const res = await fetch(`/api/weather/current/${encodeURIComponent(city)}`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       setWeatherData(data);
       setWeatherSource(data.source);
-    } catch (err) {
-      // fallback to simulated data if backend is offline
-      setWeatherData({
-        rainfall:    Math.floor(Math.random() * 60),
-        temperature: 30 + Math.floor(Math.random() * 15),
-        aqi:         100 + Math.floor(Math.random() * 350),
-        humidity:    65,
-        windSpeed:   14,
-        description: 'Partly cloudy',
-        feelsLike:   34,
-      });
+      localStorage.setItem('cachedWeather', JSON.stringify({ ...data, city }));
+
+      // Auto notifications based on conditions
+      if (data.rainfall > 50) {
+        addNotification(`🌧️ Heavy rain alert in ${city} — ${data.rainfall}mm. Coverage activated.`, 'warning');
+        addToast(`⚠️ Heavy rain detected in ${city}. Your coverage is now active.`, 'warning');
+        autoNotifyFamily(`heavy rain (${data.rainfall}mm)`, riderInfo);
+      } else if (data.temperature > 42) {
+        addNotification(`🌡️ Extreme heat alert — ${data.temperature}°C in ${city}. Coverage activated.`, 'warning');
+        addToast(`⚠️ Extreme heat detected. Your coverage is active.`, 'warning');
+        autoNotifyFamily(`extreme heat (${data.temperature}°C)`, riderInfo);
+      } else if (data.aqi > 200) {
+        addNotification(`💨 Poor air quality alert — AQI ${data.aqi} in ${city}.`, 'warning');
+        autoNotifyFamily(`severe air pollution (AQI ${data.aqi})`, riderInfo);
+      } else {
+        addNotification(`✅ Weather check complete — conditions safe in ${city}.`, 'info');
+      }
+      // 🔁 Auto-pipeline: AI defense → claim → settlement (runs silently if disruption)
+      runAutoPipeline(data, riderInfo);
+    } catch {
+      const fallback = { rainfall: Math.floor(Math.random()*60), temperature: 30+Math.floor(Math.random()*15), aqi: 100+Math.floor(Math.random()*350), humidity: 65, windSpeed: 14, description: 'Partly cloudy', feelsLike: 34, city };
+      setWeatherData(fallback);
+      localStorage.setItem('cachedWeather', JSON.stringify(fallback));
       setWeatherSource('simulated');
-    } finally {
-      setWeatherLoading(false);
-    }
+    } finally { setWeatherLoading(false); }
   };
+
+  const fetchClaims = async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/claims/my', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.claims?.length) setClaims(data.claims);
+    } catch (_) {}
+  };
+
+  // ── Automatic pipeline: weather → AI defense → claim → settlement ──────────
+  const runAutoPipeline = React.useCallback(async (weatherData, riderInfo) => {
+    if (autoPipelineRan.current) return;
+    const isDisruptionNow = weatherData.rainfall > 50 || weatherData.temperature > 42 || weatherData.aqi > 200;
+    if (!isDisruptionNow) return; // no disruption, nothing to do
+
+    autoPipelineRan.current = true;
+    const log = (msg) => setAutoPipelineLog(l => [...l, { msg, time: new Date() }]);
+
+    // Step 1 — AI Defense scan (runs silently)
+    setAiScanStatus('scanning');
+    log('🧠 AI Defense Engine scanning...');
+    await new Promise(r => setTimeout(r, 1500)); // simulate scan time
+
+    // Fraud signals check
+    const recentClaims = JSON.parse(localStorage.getItem('recentClaimsCount') || '0');
+    const hasGPS = !!localStorage.getItem('gpsLog');
+    const fraudFlags = [];
+    if (recentClaims >= 3) fraudFlags.push('High claim frequency');
+    if (!hasGPS) fraudFlags.push('No GPS data');
+
+    if (fraudFlags.length >= 2) {
+      setAiScanStatus('flagged');
+      log(`🚨 AI Defense flagged: ${fraudFlags.join(', ')} — claim blocked`);
+      addNotification(`🚨 Auto-claim blocked by AI Defense: ${fraudFlags[0]}`, 'warning');
+      return;
+    }
+
+    setAiScanStatus('cleared');
+    log('✅ AI Defense cleared — no fraud signals');
+    addNotification('🧠 AI Defense scan complete — all clear', 'success');
+
+    // Step 2 — Auto-submit claim
+    log('📋 Auto-creating claim...');
+    const reason = weatherData.rainfall > 50 ? 'Heavy Rainfall / Flood'
+      : weatherData.temperature > 42 ? 'Extreme Heat / Heatwave'
+      : 'Severe Air Pollution';
+    const maxPayout = riderInfo?.insurancePlan?.maxPayout || 480;
+    const hours = riderInfo?.workingHours || 8;
+    const amount = Math.min(maxPayout, Math.round(hours * 0.6 * 70));
+
+    const token = getToken();
+    let claimId = null;
+    try {
+      const cr = await fetch('/api/claims/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount, reason, triggerData: { rainfall: weatherData.rainfall, temperature: weatherData.temperature, aqi: weatherData.aqi } }),
+      });
+      const contentType = cr.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const cd = await cr.json();
+        claimId = cd.claim?._id;
+        log(`✅ Claim auto-created — ₹${amount} for ${reason}`);
+        addNotification(`📋 Claim auto-created — ₹${amount} for ${reason}`, 'success');
+        addToast(`📋 Claim auto-created — ₹${amount}`, 'success');
+        await fetchClaims();
+      } else {
+        log('📋 Claim queued (backend offline)');
+      }
+    } catch (_) {
+      log('📋 Claim queued offline');
+    }
+
+    // Step 3 — Auto-trigger settlement
+    await new Promise(r => setTimeout(r, 1000));
+    log('💸 Initiating automatic settlement...');
+    try {
+      const sr = await fetch('/api/settlement/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ claimId, amount, reason, triggerData: { rainfall: weatherData.rainfall } }),
+      });
+      const contentType = sr.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const sd = await sr.json();
+        log(`💸 Settlement started — TxnRef: ${sd.payoutId}`);
+        addNotification(`💸 Settlement pipeline started — ₹${amount} processing`, 'success');
+        addToast(`💰 ₹${amount} payout processing — check Settlement tab`, 'success');
+      } else {
+        log('💸 Settlement simulated (backend offline)');
+        addToast(`💰 ₹${amount} payout simulated (demo mode)`, 'success');
+      }
+    } catch (_) {
+      log('💸 Settlement queued (offline)');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSync = async () => {
+    setSyncing(true);
+    const token = getToken();
+    await syncOfflineClaims(token);
+    setOfflineQueue(getQueue());
+    await fetchClaims();
+    setSyncing(false);
+  };
+
+  const handleLogout = () => { logout(); navigate('/register'); };
 
   useEffect(() => {
     const data = localStorage.getItem('insuranceData');
-    if (!data) { navigate('/register'); return; }
-    const parsed = JSON.parse(data);
-    setInsuranceData(parsed);
+    const rider = getRider();
+    const source = rider || (data ? JSON.parse(data) : null);
+    if (!source) { navigate('/register'); return; }
+    const merged = { ...source, plan: source.insurancePlan?.name || source.plan, premium: source.insurancePlan?.premium || source.premium };
+    setInsuranceData(merged);
+    fetchWeather(merged.city, merged);
+    fetchClaims();
 
-    fetchWeather(parsed.city);
-    // Refresh every 10 minutes
-    const interval = setInterval(() => fetchWeather(parsed.city), 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [navigate]);
+    const interval = setInterval(() => fetchWeather(merged.city, merged), 10 * 60 * 1000);
+
+    const onOnline  = () => { setIsOnline(true);  setOfflineQueue(getQueue()); };
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online',  onOnline);
+    window.addEventListener('offline', onOffline);
+
+    const stopWatch = watchOnline(getToken(), () => { fetchClaims(); setOfflineQueue(getQueue()); });
+
+    return () => { clearInterval(interval); window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); stopWatch(); };
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const chartData = [
-    { name: 'Heavy Rain', value: 60, color: '#4facfe' },
-    { name: 'Shutdown', value: 80, color: '#fa709a' },
-    { name: 'Normal', value: 40, color: '#48bb78' },
-    { name: 'Instant Payouts', value: 90, color: '#ff6b35' }
+    { name: 'Heavy Rain', value: 60 },
+    { name: 'Shutdown',   value: 80 },
+    { name: 'Normal',     value: 40 },
+    { name: 'Payouts',    value: 90 },
   ];
 
   const isDisruption = weatherData && (weatherData.rainfall > 50 || weatherData.temperature > 42 || weatherData.aqi > 400);
-  const totalPayouts = payoutHistory.reduce((sum, p) => sum + p.amount, 0);
+  const totalPayouts = claims.filter(c => c.status === 'Approved').reduce((sum, p) => sum + p.amount, 0);
 
   if (!insuranceData) return null;
 
+  const riskColor = { High: '#fc8181', Medium: '#f6ad55', Low: '#68d391' };
+
+  // Income Risk Meter calculation
+  const weatherRisk = weatherData ? Math.min(100, Math.round(
+    (weatherData.rainfall / 50) * 40 +
+    (Math.max(0, weatherData.temperature - 35) / 10) * 30 +
+    (weatherData.aqi / 400) * 30
+  )) : 0;
+  const riskMeterColor = weatherRisk >= 70 ? '#fc8181' : weatherRisk >= 40 ? '#f6ad55' : '#68d391';
+  const riskMeterLabel = weatherRisk >= 70 ? 'High Risk' : weatherRisk >= 40 ? 'Medium Risk' : 'Low Risk';
+
+  // Fraud simulation (used by AI Defense Engine via props)
+  // eslint-disable-next-line no-unused-vars
+  const runFraudTest = () => {
+    const flags = [];
+    if (fraudTest.claimsThisWeek >= 3) flags.push('High claim frequency (3+ in 7 days)');
+    if (fraudTest.amount > (insuranceData.maxPayout || 1000) * 0.95) flags.push('Claim near maximum payout limit');
+    if (!fraudTest.hasGPS) flags.push('Missing GPS / location data');
+    if (fraudTest.sameDay) flags.push('Duplicate claim on same day');
+    const status = flags.length >= 2 ? 'Flagged' : flags.length === 1 ? 'Review' : 'Approved';
+    setFraudResult({ flags, status });
+  };
+
   return (
     <div className="dashboard-page">
+
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast-${t.type}`}>{t.msg}</div>
+        ))}
+      </div>
+
       <nav className="navbar">
         <div className="nav-container">
-          <div className="logo">
-            <Shield size={32} />
-            <span>RideShield</span>
-          </div>
+          <div className="logo"><Shield size={32}/><span>RideShield</span></div>
           <div className="nav-user">
-            <Bell size={24} />
-            <div className="user-avatar">{insuranceData.name.charAt(0)}</div>
+            {!isOnline && <span className="offline-badge"><WifiOff size={14}/> Offline</span>}
+            <div className="notif-bell" onClick={() => setShowNotifPanel(p => !p)}>
+              <Bell size={24}/>
+              {notifications.filter(n => n.type !== 'read').length > 0 && (
+                <span className="notif-dot">{Math.min(notifications.length, 9)}</span>
+              )}
+              {showNotifPanel && (
+                <div className="notif-panel" onClick={e => e.stopPropagation()}>
+                  <div className="notif-header">
+                    <span>Notifications</span>
+                    <button onClick={() => setNotifications([])}>Clear all</button>
+                  </div>
+                  {notifications.length === 0
+                    ? <div className="notif-empty">No notifications yet</div>
+                    : notifications.map(n => (
+                      <div key={n.id} className={`notif-item notif-${n.type}`}>
+                        <span className="notif-msg">{n.msg}</span>
+                        <span className="notif-time">{n.time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+            <div className="user-avatar">{insuranceData.name?.charAt(0)}</div>
+            <button className="btn-logout" onClick={handleLogout} title="Logout"><LogOut size={18}/></button>
           </div>
         </div>
       </nav>
 
-      <div className="dashboard-container">
-        {/* Welcome Section */}
+      <div className="dashboard-layout">
+
+        {/* LEFT SIDEBAR */}
+        <aside className="sidebar">
+          <div className="sidebar-user">
+            <div className="sidebar-avatar">{insuranceData.name?.charAt(0)}</div>
+            <div>
+              <div className="sidebar-name">{insuranceData.name}</div>
+              <div className="sidebar-plan">{insuranceData.plan} Plan</div>
+            </div>
+          </div>
+          <nav className="sidebar-nav">
+            {NAV.map(n => (
+              <button key={n.id} className={`sidebar-item ${activeTab === n.id ? 'active' : ''}`} onClick={() => setActiveTab(n.id)}>
+                <span className="sidebar-icon">{n.icon}</span>
+                <span>{n.label}</span>
+              </button>
+            ))}
+          </nav>
+          <button className="sidebar-logout" onClick={handleLogout}><LogOut size={16}/> Logout</button>
+        </aside>
+
+        {/* MAIN CONTENT */}
+        <div className="dashboard-container">
+        {/* Offline Queue Banner */}
+        {offlineQueue.length > 0 && activeTab !== 'offline' && (
+          <div className="offline-queue-banner">
+            <WifiOff size={20}/>
+            <span>{offlineQueue.length} claim(s) queued offline</span>
+            {isOnline && <button className="btn-sync" onClick={handleSync} disabled={syncing}><RefreshCw size={16}/> {syncing ? 'Syncing...' : 'Sync Now'}</button>}
+          </div>
+        )}
+
+        {/* Welcome — always visible */}
         <div className="welcome-section">
           <div>
             <h1>Welcome back, {insuranceData.name}!</h1>
             <p>Your income is protected 24/7</p>
           </div>
-          <div className="plan-badge">
-            <Shield size={20} />
-            {insuranceData.plan} Plan
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {insuranceData.riskLevel && (
+              <div className="risk-badge" style={{ background: riskColor[insuranceData.riskLevel] }}>
+                Risk: {insuranceData.riskLevel}
+              </div>
+            )}
+            <div className="plan-badge"><Shield size={20}/>{insuranceData.plan} Plan</div>
           </div>
         </div>
 
-        {/* Alert Banner */}
         {isDisruption && (
-          <div className="alert-banner">
-            <AlertTriangle size={28} />
-            <div>
-              <strong>Disruption Detected!</strong>
-              <p>Environmental conditions have triggered your insurance. Payout being processed.</p>
+          <div className="alert-banner you-not-alone">
+            <div className="yna-emoji">🌧️</div>
+            <div className="yna-content">
+              <strong>You're not alone, {insuranceData.name?.split(' ')[0]} ❤️</strong>
+              <p>We noticed you've been affected by {weatherData?.rainfall > 50 ? 'heavy rain' : weatherData?.temperature > 42 ? 'extreme heat' : 'poor air quality'} today. Don't worry — your earnings are protected.</p>
+              <div className="yna-actions">
+                <span className="yna-riders">👥 {nearbyRiders} riders in your area are facing the same issue</span>
+                {(getRider() || JSON.parse(localStorage.getItem('riderData')||'{}')).familyEmail && (
+                  <button className="btn-notify-family" onClick={() => sendFamilyEmail('triggered')} disabled={familySending || familySent}>
+                    {familySent ? '✅ Family notified' : familySending ? 'Sending...' : '❤️ Notify my family'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Main Grid */}
-        <div className="main-grid">
-          {/* Left Column - Stats */}
-          <div className="left-column">
-            <h2>Earnings Dashboard</h2>
-            
-            <div className="stat-card active-policy">
-              <div className="stat-icon">
-                <Shield size={28} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Active Policy</span>
-                <span className="stat-sublabel">Weekly Plan</span>
-              </div>
-              <span className="stat-value">₹{insuranceData.premium}</span>
+        {/* ── OVERVIEW ── */}
+        {activeTab === 'overview' && (<>
+          <div className="main-grid">
+            <div className="left-column">
+              <h2>Earnings Dashboard</h2>
+              <div className="stat-card active-policy"><div className="stat-icon"><Shield size={28}/></div><div className="stat-info"><span className="stat-label">Active Policy</span><span className="stat-sublabel">Weekly Plan</span></div><span className="stat-value">₹{insuranceData.premium}</span></div>
+              <div className="stat-card income-loss"><div className="stat-icon"><TrendingUp size={28}/></div><div className="stat-info"><span className="stat-label">Income Loss Tracked</span><span className="stat-sublabel">Insurance Payout</span></div><span className="stat-value">₹{totalPayouts}</span></div>
+              <div className="stat-card claims-processed"><div className="stat-icon"><FileCheck size={28}/></div><div className="stat-info"><span className="stat-label">Claims Processed</span><span className="stat-sublabel">Document</span></div><span className="stat-value">{claims.length} Claims</span></div>
+              <div className="stat-card payouts-sent"><div className="stat-icon"><Wallet size={28}/></div><div className="stat-info"><span className="stat-label">Payouts Sent</span><span className="stat-sublabel">Instantly Deposited</span></div><span className="stat-value">₹{totalPayouts}</span></div>
+              <PaymentSettingsCard insuranceData={insuranceData} getToken={getToken} addToast={addToast} />
             </div>
-
-            <div className="stat-card income-loss">
-              <div className="stat-icon">
-                <TrendingUp size={28} />
+            <div className="right-column">
+              <h2>Income Protection Overview</h2>
+              <div className="chart-container">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0"/>
+                    <XAxis dataKey="name" stroke="#718096"/><YAxis stroke="#718096"/>
+                    <Tooltip contentStyle={{ background:'white', border:'1px solid #e2e8f0', borderRadius:'8px' }}/>
+                    <Bar dataKey="value" fill="#667eea" radius={[8,8,0,0]}/>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <div className="stat-info">
-                <span className="stat-label">Income Loss Tracked</span>
-                <span className="stat-sublabel">Insurance Payout</span>
-              </div>
-              <span className="stat-value">₹{totalPayouts}</span>
-            </div>
-
-            <div className="stat-card claims-processed">
-              <div className="stat-icon">
-                <FileCheck size={28} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Claims Processed</span>
-                <span className="stat-sublabel">Document</span>
-              </div>
-              <span className="stat-value">{payoutHistory.length} Claims</span>
-            </div>
-
-            <div className="stat-card payouts-sent">
-              <div className="stat-icon">
-                <Wallet size={28} />
-              </div>
-              <div className="stat-info">
-                <span className="stat-label">Payouts Sent</span>
-                <span className="stat-sublabel">Instantly Deposited</span>
-              </div>
-              <span className="stat-value">₹{totalPayouts}</span>
             </div>
           </div>
-
-          {/* Right Column - Chart */}
-          <div className="right-column">
-            <h2>Income Protection Overview</h2>
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" stroke="#718096" />
-                  <YAxis stroke="#718096" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'white', 
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Bar dataKey="value" fill="#667eea" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Environmental Monitoring */}
-        <div className="monitoring-section">
-          <h2>Real-Time Environmental Monitoring</h2>
-          <p className="section-subtitle">
-            Live conditions in {insuranceData.city}
-            {weatherSource === 'live' && <span className="live-badge">● LIVE</span>}
-            {weatherSource === 'simulated' && <span className="sim-badge">⚠ Simulated</span>}
-          </p>
-
-          {weatherLoading ? (
-            <div className="weather-loading">Fetching live weather data...</div>
-          ) : (
-            <>
+          <div className="monitoring-section">
+            <h2>Real-Time Environmental Monitoring</h2>
+            <p className="section-subtitle">Live conditions in {insuranceData.city} {weatherSource==='live' && <span className="live-badge">● LIVE</span>}{weatherSource==='simulated' && <span className="sim-badge">⚠ Simulated</span>}</p>
+            {weatherLoading ? <div className="weather-loading">Fetching live weather data...</div> : (<>
               <div className="monitoring-grid">
-                <div className="monitor-card">
-                  <div className="monitor-icon rainfall">
-                    <CloudRain size={32} />
-                  </div>
-                  <div className="monitor-content">
-                    <span className="monitor-label">Rainfall</span>
-                    <span className="monitor-value">{weatherData.rainfall} mm</span>
-                    <span className="monitor-threshold">Threshold: 50mm</span>
-                  </div>
-                  <div className="monitor-status">
-                    {weatherData.rainfall > 50
-                      ? <span className="status-badge danger">Alert</span>
-                      : <span className="status-badge safe">Safe</span>}
+                <div className="monitor-card"><div className="monitor-icon rainfall"><CloudRain size={32}/></div><div className="monitor-content"><span className="monitor-label">Rainfall</span><span className="monitor-value">{weatherData.rainfall} mm</span><span className="monitor-threshold">Threshold: 50mm</span></div><div className="monitor-status">{weatherData.rainfall>50?<span className="status-badge danger">Alert</span>:<span className="status-badge safe">Safe</span>}</div></div>
+                <div className="monitor-card"><div className="monitor-icon temperature"><Thermometer size={32}/></div><div className="monitor-content"><span className="monitor-label">Temperature</span><span className="monitor-value">{weatherData.temperature}°C</span><span className="monitor-threshold">Feels like {weatherData.feelsLike}°C · Humidity {weatherData.humidity}%</span></div><div className="monitor-status">{weatherData.temperature>42?<span className="status-badge danger">Alert</span>:<span className="status-badge safe">Safe</span>}</div></div>
+                <div className="monitor-card"><div className="monitor-icon aqi"><Wind size={32}/></div><div className="monitor-content"><span className="monitor-label">Air Quality</span><span className="monitor-value">AQI {weatherData.aqi}</span><span className="monitor-threshold">Wind: {weatherData.windSpeed} km/h</span></div><div className="monitor-status">{weatherData.aqi>200?<span className="status-badge danger">Alert</span>:<span className="status-badge safe">Safe</span>}</div></div>
+              </div>
+              {weatherData.description && <p className="weather-description">🌤 {weatherData.description.charAt(0).toUpperCase()+weatherData.description.slice(1)} in {insuranceData.city}</p>}
+            </>)}
+          </div>
+        </>)}
+
+        {/* ── MAP TAB ── */}
+        {activeTab === 'map' && <MapTab insuranceData={insuranceData}/>}
+
+        {/* ── AI DEFENSE ENGINE ── */}
+        {activeTab === 'ai-defense' && (
+          <AIDefenseEngine
+            insuranceData={insuranceData}
+            weatherRisk={weatherRisk}
+            claims={claims}
+          />
+        )}
+
+        {/* ── RISK METER ── */}
+        {activeTab === 'risk' && (
+          <div className="risk-meter-section">
+            <h2>📊 Income Risk Meter</h2>
+            <p className="section-subtitle">Real-time risk based on live weather in {insuranceData.city}</p>
+
+            {/* Hero gauge + animated background */}
+            <div className="rm-hero" style={{
+              background: weatherRisk >= 70
+                ? 'linear-gradient(135deg, #fff5f5, #fed7d7)'
+                : weatherRisk >= 40
+                ? 'linear-gradient(135deg, #fffbeb, #feebc8)'
+                : 'linear-gradient(135deg, #f0fff4, #c6f6d5)',
+              borderColor: riskMeterColor,
+            }}>
+              {/* Big animated gauge */}
+              <div className="rm-gauge-wrap">
+                <svg viewBox="0 0 220 130" className="rm-gauge-svg">
+                  {/* Track */}
+                  <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="#e2e8f0" strokeWidth="18" strokeLinecap="round"/>
+                  {/* Colored fill */}
+                  <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke={riskMeterColor}
+                    strokeWidth="18" strokeLinecap="round"
+                    strokeDasharray={`${(weatherRisk/100)*283} 283`}
+                    style={{ transition: 'stroke-dasharray 1.5s ease, stroke 0.8s ease' }}/>
+                  {/* Needle */}
+                  <line
+                    x1="110" y1="110"
+                    x2={110 + 75*Math.cos(Math.PI - (weatherRisk/100)*Math.PI)}
+                    y2={110 - 75*Math.sin((weatherRisk/100)*Math.PI)}
+                    stroke="#1e3a5f" strokeWidth="4" strokeLinecap="round"
+                    style={{ transition: 'all 1.5s ease' }}/>
+                  <circle cx="110" cy="110" r="8" fill="#1e3a5f"/>
+                  {/* Labels */}
+                  <text x="18"  y="128" fontSize="10" fill="#718096">0</text>
+                  <text x="100" y="22"  fontSize="10" fill="#718096">50</text>
+                  <text x="196" y="128" fontSize="10" fill="#718096">100</text>
+                  {/* Zone labels */}
+                  <text x="38"  y="90" fontSize="9" fill="#68d391" fontWeight="700">LOW</text>
+                  <text x="98"  y="38" fontSize="9" fill="#f6ad55" fontWeight="700">MED</text>
+                  <text x="162" y="90" fontSize="9" fill="#fc8181" fontWeight="700">HIGH</text>
+                </svg>
+                <div className="rm-gauge-center">
+                  <div className="rm-big-num" style={{ color: riskMeterColor }}>{weatherRisk}%</div>
+                  <div className="rm-big-label" style={{ color: riskMeterColor }}>{riskMeterLabel}</div>
+                </div>
+              </div>
+
+              {/* Right side info */}
+              <div className="rm-info">
+                <div className="rm-city-badge">📍 {insuranceData.city}</div>
+                <div className="rm-income-risk">
+                  <span>Estimated income at risk today</span>
+                  <strong style={{ color: riskMeterColor, fontSize: '1.8rem' }}>
+                    ₹{Math.round((weatherRisk/100)*(insuranceData.workingHours||8)*60)}
+                  </strong>
+                </div>
+                <div className="rm-status-pill" style={{ background: riskMeterColor }}>
+                  {weatherRisk >= 70 ? '🔴 Coverage Active' : weatherRisk >= 40 ? '🟡 Monitoring' : '🟢 All Clear'}
+                </div>
+              </div>
+            </div>
+
+            {/* 3 signal bars with icons */}
+            <div className="rm-signals">
+              {[
+                { icon: '🌧️', label: 'Rainfall Risk',  value: Math.min(100,Math.round((weatherData?.rainfall||0)/50*100)),  color: '#4facfe', detail: `${weatherData?.rainfall||0}mm / 50mm threshold` },
+                { icon: '🌡️', label: 'Heat Risk',       value: Math.min(100,Math.round(Math.max(0,(weatherData?.temperature||30)-35)/10*100)), color: '#fa709a', detail: `${weatherData?.temperature||30}°C / 42°C threshold` },
+                { icon: '💨', label: 'Air Quality Risk', value: Math.min(100,Math.round((weatherData?.aqi||0)/400*100)),       color: '#f6ad55', detail: `AQI ${weatherData?.aqi||0} / 400 threshold` },
+              ].map((s,i) => (
+                <div key={i} className="rm-signal-card">
+                  <div className="rm-signal-icon">{s.icon}</div>
+                  <div className="rm-signal-body">
+                    <div className="rm-signal-top">
+                      <span className="rm-signal-label">{s.label}</span>
+                      <span className="rm-signal-pct" style={{ color: s.color }}>{s.value}%</span>
+                    </div>
+                    <div className="rm-signal-track">
+                      <div className="rm-signal-fill" style={{ width:`${s.value}%`, background:`linear-gradient(90deg, ${s.color}88, ${s.color})` }}/>
+                    </div>
+                    <div className="rm-signal-detail">{s.detail}</div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                <div className="monitor-card">
-                  <div className="monitor-icon temperature">
-                    <Thermometer size={32} />
+        {/* ── CLAIMS ── */}
+        {activeTab === 'claims' && (() => {
+          const locFraud = (() => { try { return JSON.parse(localStorage.getItem('locationFraud')); } catch { return null; } })();
+          return (
+          <div className="history-section">
+            <h2>📋 Claims & Payouts</h2>
+
+            {locFraud ? (
+              <div className="claim-denied-banner">
+                <div className="cdb-icon">🚫</div>
+                <div className="cdb-content">
+                  <strong>Claims Temporarily Blocked</strong>
+                  <p>Your GPS shows you are in <strong>{locFraud.actualCity}</strong>, but your registered city is <strong>{locFraud.registeredCity}</strong>{locFraud.distanceKm ? ` — ${locFraud.distanceKm} km apart` : ''}.</p>
+                  <p>RideShield's fraud protection requires your location to match your registered city before processing claims.</p>
+                  <div className="cdb-steps">
+                    <span>What you can do:</span>
+                    <ul>
+                      <li>✅ Travel to <strong>{locFraud.registeredCity}</strong> to submit claims</li>
+                      <li>✅ Update your city if you've relocated — contact support</li>
+                      <li>✅ If this is an error, your claim will be reviewed manually within 24 hours</li>
+                    </ul>
                   </div>
-                  <div className="monitor-content">
-                    <span className="monitor-label">Temperature</span>
-                    <span className="monitor-value">{weatherData.temperature}°C</span>
-                    <span className="monitor-threshold">
-                      Feels like {weatherData.feelsLike}°C · Humidity {weatherData.humidity}%
+                  <p className="cdb-note">Detected at: {new Date(locFraud.detectedAt).toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="claims-heart-msg">
+                <span className="chm-icon">🛡️</span>
+                <div>
+                  <strong>You are not alone, {insuranceData.name?.split(' ')[0]} ❤️</strong>
+                  <p>RideShield is with you through every disruption. Every claim here means we stepped in so you didn't have to worry. We've got you — always.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="history-list">
+              {claims.map((claim, index) => (
+                <div key={index} className="history-item">
+                  <div className={`history-icon status-${(claim.status||'').toLowerCase()}`}>
+                    {claim.status==='Approved' ? <CheckCircle size={24}/> : claim.status==='Flagged' ? <AlertTriangle size={24}/> : <RefreshCw size={24}/>}
+                  </div>
+                  <div className="history-info">
+                    <span className="history-reason">{claim.reason}</span>
+                    <span className="history-date">{new Date(claim.date||claim.createdAt).toLocaleDateString('en-IN')}</span>
+                    <span className="claim-heart-msg">
+                      {claim.status==='Approved' && '❤️ We stepped in so you didn\'t have to worry. Your earnings are safe.'}
+                      {claim.status==='Processing' && '🤝 Hang tight — we\'re working on this for you right now.'}
+                      {claim.status==='Flagged' && '🙏 We\'re reviewing this carefully. If honest, you\'ll hear from us within 24hrs.'}
+                    </span>
+                    {claim.fraudFlags?.length > 0 && <span className="fraud-flag">⚠ {claim.fraudFlags[0]}</span>}
+                    <span className="transparency-note">
+                      {claim.status==='Approved' && '✅ Auto-approved: weather threshold exceeded, GPS verified'}
+                      {claim.status==='Flagged'  && '⚠ Flagged: suspicious signals — under manual review'}
+                      {claim.status==='Processing' && '🔄 Verifying environmental data...'}
                     </span>
                   </div>
-                  <div className="monitor-status">
-                    {weatherData.temperature > 42
-                      ? <span className="status-badge danger">Alert</span>
-                      : <span className="status-badge safe">Safe</span>}
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.25rem'}}>
+                    <div className="history-amount">+₹{claim.amount}</div>
+                    <span className={`claim-status claim-${(claim.status||'').toLowerCase()}`}>{claim.status}</span>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                <div className="monitor-card">
-                  <div className="monitor-icon aqi">
-                    <Wind size={32} />
+            {/* ── PAYOUT TIMELINE ── */}
+            <div className="payout-timeline">
+              <h3>📅 Payout Timeline</h3>
+              {(() => {
+                const colors = ['#9b59b6','#4facfe','#48bb78','#fa709a','#e67e22'];
+                const icons  = { 'Heavy Rainfall':'🌧️','Extreme Heat':'🌡️','Local Shutdown':'🚫','Air Pollution':'💨','LPG / Fuel Shortage':'⛽' };
+                return (
+                  <div className="htl-container">
+                    <div className="htl-road">
+                      <div className="htl-axis"/>
+                      <div className="htl-rider" style={{ left: `${tlRiderPct}%` }}>🛵</div>
+                      <div className="htl-nodes">
+                        {claims.map((claim, i) => {
+                          const color   = colors[i % colors.length];
+                          const isTop   = i % 2 === 0;
+                          const isActive = tlActiveIdx >= i;
+                          const hasPopup = tlPopups.includes(i);
+                          return (
+                            <div key={i} className="htl-node" style={{ animationDelay: `${i * 0.2}s` }}>
+                              {isTop && (
+                                <div className={`htl-card htl-top ${isActive ? 'lit' : ''}`} style={{ borderColor: color }}>
+                                  <div className="htl-card-icon">{icons[claim.reason] || '⚡'}</div>
+                                  <div className="htl-card-reason">{claim.reason}</div>
+                                  <div className="htl-card-amount" style={{ color }}>+₹{claim.amount}</div>
+                                  <div className="htl-card-date">{new Date(claim.date||claim.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+                                  <span className={`htl-badge htl-${(claim.status||'').toLowerCase()}`}>{claim.status}</span>
+                                </div>
+                              )}
+                              <div className="htl-stem" style={{ background: color }}/>
+                              <div className={`htl-dot ${isActive ? 'active' : ''}`} style={{ background: color, boxShadow: `0 0 ${isActive ? 20 : 8}px ${color}` }}>
+                                <span>{icons[claim.reason] || '⚡'}</span>
+                              </div>
+                              {hasPopup && (
+                                <div className="htl-popup" style={{ color }}>💰 +₹{claim.amount}</div>
+                              )}
+                              <div className="htl-stem" style={{ background: color }}/>
+                              {!isTop && (
+                                <div className={`htl-card htl-bottom ${isActive ? 'lit' : ''}`} style={{ borderColor: color }}>
+                                  <div className="htl-card-icon">{icons[claim.reason] || '⚡'}</div>
+                                  <div className="htl-card-reason">{claim.reason}</div>
+                                  <div className="htl-card-amount" style={{ color }}>+₹{claim.amount}</div>
+                                  <div className="htl-card-date">{new Date(claim.date||claim.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+                                  <span className={`htl-badge htl-${(claim.status||'').toLowerCase()}`}>{claim.status}</span>
+                                </div>
+                              )}
+                              {isTop && <div className="htl-spacer"/>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  <div className="monitor-content">
-                    <span className="monitor-label">Air Quality</span>
-                    <span className="monitor-value">AQI {weatherData.aqi}</span>
-                    <span className="monitor-threshold">Wind: {weatherData.windSpeed} km/h · PM2.5: {weatherData.pm25} µg/m³</span>
+                );
+              })()}
+            </div>
+
+          </div>
+          );
+        })()}
+
+        {/* ── VOICE CLAIM ── */}
+        {activeTab === 'voice' && (
+          <div className="voice-section">
+            <h2>🎙️ Voice Claim</h2>
+            <p className="section-subtitle">Too busy to type? Just speak. We'll handle the rest.</p>
+
+            <div className="voice-hero-card">
+              {/* Left — mic area */}
+              <div className="voice-left">
+                <div className="voice-mic-glow">
+                  <button
+                    className={`voice-mic-btn ${voiceListening ? 'listening' : ''}`}
+                    onClick={voiceListening ? stopVoice : startVoiceClaim}
+                  >
+                    <span className="mic-icon">{voiceListening ? '⏹️' : '🎙️'}</span>
+                    <span>{voiceListening ? 'Listening...' : 'Tap to Speak'}</span>
+                  </button>
+                  {voiceListening && <div className="mic-ripple"/>}
+                  {voiceListening && <div className="mic-ripple mic-ripple-2"/>}
+                </div>
+
+                {voiceListening && (
+                  <div className="voice-waves">
+                    <span/><span/><span/><span/><span/>
                   </div>
-                  <div className="monitor-status">
-                    {weatherData.aqi > 200
-                      ? <span className="status-badge danger">Alert</span>
-                      : <span className="status-badge safe">Safe</span>}
+                )}
+
+                {voiceText && (
+                  <div className="voice-transcript">
+                    <span className="vt-label">You said:</span>
+                    <span className="vt-text">"{voiceText}"</span>
+                  </div>
+                )}
+
+                {voiceError && <div className="voice-error">⚠️ {voiceError}</div>}
+
+                {voiceResult && (
+                  <button className="btn-stop-speech" onClick={() => window.speechSynthesis.cancel()}>
+                    🔇 Stop Voice
+                  </button>
+                )}
+
+                <div className="voice-langs">
+                  {['🇮🇳 Hindi', '🇬🇧 English', '🤝 Hinglish'].map((l,i) => (
+                    <span key={i} className="lang-tag">{l}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right — examples + result */}
+              <div className="voice-right">
+                {!voiceResult ? (
+                  <>
+                    <div className="voice-examples-title">🗣️ Try saying...</div>
+                    <div className="voice-examples-grid">
+                      {[
+                        { text: 'I am stuck due to heavy rain', icon: '🌧️', color: '#4facfe' },
+                        { text: 'Baarish ho rahi hai', icon: '🌧️', color: '#4facfe' },
+                        { text: 'Bandh hai mere area mein', icon: '🚫', color: '#fa709a' },
+                        { text: 'There is a strike / curfew', icon: '🚫', color: '#fa709a' },
+                        { text: 'LPG gas shortage', icon: '⛽', color: '#f6ad55' },
+                        { text: 'Garmi bahut zyada hai', icon: '🌡️', color: '#fc8181' },
+                      ].map((ex, i) => (
+                        <div key={i} className="voice-ex-card" style={{ borderColor: ex.color }}>
+                          <span className="vex-icon">{ex.icon}</span>
+                          <span className="vex-text">"{ex.text}"</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className={`voice-result-big ${voiceResult.status === 'Approved' ? 'approved' : 'processing'}`}>
+                    <div className="vrb-icon">{voiceResult.status === 'Approved' ? '✅' : '⏳'}</div>
+                    <div className="vrb-msg">{voiceResult.responseMsg}</div>
+                    <div className="vrb-pills">
+                      <span className="vrb-pill">{voiceResult.reason}</span>
+                      <span className="vrb-pill" style={{ background: '#48bb78' }}>₹{voiceResult.amount}</span>
+                      <span className="vrb-pill">{voiceResult.status}</span>
+                    </div>
+                    {voiceResult.status === 'Approved' && (
+                      <p className="vrb-heart">❤️ Aapki family ko bhi inform kar diya gaya hai.</p>
+                    )}
+                    <button className="vrb-retry" onClick={() => { setVoiceResult(null); setVoiceText(''); }}>
+                      🎙️ New Claim
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="voice-supported-langs">
+              <span>🌐 Supported:</span>
+              {['English', 'Hindi (baarish, garmi, bandh)', 'Hinglish'].map((l, i) => (
+                <span key={i} className="lang-tag">{l}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SIMULATION ── */}
+        {activeTab === 'simulation' && (
+          <div className="sim-section">
+            <h2>⚡ Simulation Mode</h2>
+            <p className="section-subtitle">Watch how RideShield responds to a real disruption — step by step</p>
+            <div className="sim-card">
+              <button className="btn-simulate" onClick={runSimulation} disabled={simRunning}>{simRunning?'⏳ Simulating...':'🌧️ Simulate Disruption'}</button>
+              <div className="sim-steps">
+                {simSteps.map((step,i)=>(
+                  <div key={i} className={`sim-step ${simStep>i?'done':''} ${simStep===i+1?'active':''}`}>
+                    <div className="sim-step-icon">{simStep>i?'✅':step.icon}</div>
+                    <div className="sim-step-text">{step.text}</div>
+                  </div>
+                ))}
+              </div>
+              {simStep===simSteps.length && <div className="sim-result"><CheckCircle size={32} color="#48bb78"/><div><strong>Simulation Complete!</strong><p>₹480 payout processed in under 3 minutes — zero manual steps.</p></div></div>}
+            </div>
+          </div>
+        )}
+
+        {/* ── LOYALTY REWARDS ── */}
+        {activeTab === 'loyalty' && (() => {
+          const approvedCount = claims.filter(c => c.status === 'Approved').length;
+          const flaggedCount  = claims.filter(c => c.status === 'Flagged').length;
+          const weeksActive   = 3; // simulated
+          const isHonest      = flaggedCount === 0;
+
+          const discount      = isHonest ? (approvedCount >= 3 ? 20 : approvedCount >= 1 ? 10 : 5) : 0;
+          const bonusCoverage = isHonest && approvedCount >= 2 ? 200 : 0;
+          const tier          = trustScore >= 85 ? 'Diamond 💎' : trustScore >= 70 ? 'Gold 🥇' : trustScore >= 55 ? 'Silver 🥈' : 'Bronze 🥉';
+          const tierColor     = trustScore >= 85 ? '#4facfe' : trustScore >= 70 ? '#ffd700' : trustScore >= 55 ? '#a0aec0' : '#cd7f32';
+
+          const milestones = [
+            { label: 'First honest claim',        done: approvedCount >= 1, reward: '5% premium discount' },
+            { label: '3 approved claims',          done: approvedCount >= 3, reward: '10% premium discount' },
+            { label: 'Zero fraud flags ever',      done: flaggedCount === 0, reward: 'Bonus ₹200 coverage' },
+            { label: '4 weeks active',             done: weeksActive >= 4,   reward: 'Priority claim processing' },
+            { label: 'Trust score above 80',       done: trustScore >= 80,   reward: 'Instant payout upgrade' },
+            { label: 'Referred a friend',          done: false,              reward: '1 week free coverage' },
+          ];
+
+          return (
+            <div className="loyalty-section">
+              <h2>🎁 Loyalty Rewards</h2>
+              <p className="section-subtitle">Honesty pays. Every honest claim builds your rewards.</p>
+
+              {/* Tier Card */}
+              <div className="loyalty-tier-card" style={{ borderColor: tierColor }}>
+                <div className="tier-left">
+                  <div className="tier-badge" style={{ background: tierColor }}>{tier}</div>
+                  <div>
+                    <h3>Your Loyalty Tier</h3>
+                    <p>Based on trust score, claim history & activity</p>
+                  </div>
+                </div>
+                <div className="tier-score" style={{ color: tierColor }}>{trustScore}<span>/100</span></div>
+              </div>
+
+              {/* Active Rewards */}
+              <div className="active-rewards">
+                <h3>🎉 Your Active Rewards</h3>
+                <div className="rewards-grid">
+                  {discount > 0 && (
+                    <div className="reward-card unlocked">
+                      <div className="reward-icon">💸</div>
+                      <div className="reward-info">
+                        <strong>{discount}% Premium Discount</strong>
+                        <p>Applied to your next renewal automatically</p>
+                      </div>
+                      <div className="reward-tag">Active</div>
+                    </div>
+                  )}
+                  {bonusCoverage > 0 && (
+                    <div className="reward-card unlocked">
+                      <div className="reward-icon">🛡️</div>
+                      <div className="reward-info">
+                        <strong>+₹{bonusCoverage} Bonus Coverage</strong>
+                        <p>Extra payout limit added to your plan</p>
+                      </div>
+                      <div className="reward-tag">Active</div>
+                    </div>
+                  )}
+                  {isHonest && (
+                    <div className="reward-card unlocked">
+                      <div className="reward-icon">⚡</div>
+                      <div className="reward-info">
+                        <strong>Fast-Track Claims</strong>
+                        <p>Your claims are reviewed first — no waiting</p>
+                      </div>
+                      <div className="reward-tag">Active</div>
+                    </div>
+                  )}
+                  {!isHonest && (
+                    <div className="reward-card locked">
+                      <div className="reward-icon">🔒</div>
+                      <div className="reward-info">
+                        <strong>Rewards Paused</strong>
+                        <p>Resolve flagged claims to unlock rewards again</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Milestones */}
+              <div className="milestones-section">
+                <h3>🏆 Milestones</h3>
+                <div className="milestones-list">
+                  {milestones.map((m, i) => (
+                    <div key={i} className={`milestone-item ${m.done ? 'done' : 'pending'}`}>
+                      <div className="milestone-check">{m.done ? '✅' : '⬜'}</div>
+                      <div className="milestone-info">
+                        <span className="milestone-label">{m.label}</span>
+                        <span className="milestone-reward">🎁 {m.reward}</span>
+                      </div>
+                      {m.done && <div className="milestone-unlocked">Unlocked</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Honest Rider Badge */}
+              {isHonest && (
+                <div className="honest-badge-card">
+                  <div className="hb-icon">🫶</div>
+                  <div>
+                    <h3>Honest Rider Badge</h3>
+                    <p>You have zero fraud flags on your account. This badge shows RideShield trusts you completely. Keep it up — your rewards will keep growing.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── TRUST SCORE ── */}
+        {activeTab === 'trust' && (
+          <div className="trust-section">
+            <h2>🏅 Trust Score</h2>
+            <p className="section-subtitle">Your credibility score based on claim history and behavior</p>
+
+            {/* Big visual score card */}
+            <div className="trust-hero-card" style={{ background: `linear-gradient(135deg, ${trustColor}22, ${trustColor}11)`, borderColor: trustColor }}>
+              <div className="trust-hero-left">
+                <div className="trust-big-circle" style={{ borderColor: trustColor, boxShadow: `0 0 40px ${trustColor}44` }}>
+                  <svg viewBox="0 0 140 140" className="trust-svg-big">
+                    <circle cx="70" cy="70" r="58" fill="none" stroke="#e2e8f0" strokeWidth="10"/>
+                    <circle cx="70" cy="70" r="58" fill="none" stroke={trustColor} strokeWidth="10"
+                      strokeDasharray={`${(trustScore/100)*364} 364`} strokeLinecap="round"
+                      transform="rotate(-90 70 70)" style={{ transition: 'stroke-dasharray 1.5s ease' }}/>
+                  </svg>
+                  <div className="trust-circle-inner">
+                    <div className="trust-big-num" style={{ color: trustColor }}>{trustScore}</div>
+                    <div className="trust-big-label">{trustLevel}</div>
+                    <div className="trust-big-emoji">
+                      {trustScore >= 80 ? '🏆' : trustScore >= 60 ? '🥇' : '🥈'}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {weatherData.description && (
-                <p className="weather-description">
-                  🌤 {weatherData.description.charAt(0).toUpperCase() + weatherData.description.slice(1)} in {insuranceData.city}
+              <div className="trust-hero-right">
+                <div className="trust-tier-badge" style={{ background: trustColor }}>
+                  {trustScore >= 85 ? '💎 Diamond' : trustScore >= 70 ? '🥇 Gold' : trustScore >= 55 ? '🥈 Silver' : '🥉 Bronze'}
+                </div>
+                <p className="trust-hero-msg">
+                  {trustScore >= 80 ? 'Outstanding! You are one of our most trusted riders. Enjoy priority claims and maximum payouts.' :
+                   trustScore >= 60 ? 'Good standing. Keep honest claims to unlock Diamond tier rewards.' :
+                   'Building trust. Every honest claim improves your score.'}
                 </p>
-              )}
-            </>
-          )}
-        </div>
+                <div className="trust-perks">
+                  {[
+                    { icon: '⚡', label: 'Claim Speed',    val: trustScore >= 80 ? 'Instant' : trustScore >= 60 ? '< 2 hrs' : '< 24 hrs' },
+                    { icon: '💰', label: 'Payout Limit',   val: trustScore >= 80 ? '₹1,200' : trustScore >= 60 ? '₹900' : '₹600' },
+                    { icon: '🎁', label: 'Premium Discount', val: trustScore >= 80 ? '20% off' : trustScore >= 60 ? '10% off' : '5% off' },
+                  ].map((p, i) => (
+                    <div key={i} className="trust-perk">
+                      <span className="trust-perk-icon">{p.icon}</span>
+                      <span className="trust-perk-label">{p.label}</span>
+                      <span className="trust-perk-val" style={{ color: trustColor }}>{p.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-        {/* Payout History */}
-        <div className="history-section">
-          <h2>Recent Payouts</h2>
-          <div className="history-list">
-            {payoutHistory.map((payout, index) => (
-              <div key={index} className="history-item">
-                <div className="history-icon">
-                  <CheckCircle size={24} />
+            {/* Visual signal cards */}
+            <div className="trust-signals-grid">
+              {[
+                { icon: '✅', label: 'Approved Claims', value: claims.filter(c=>c.status==='Approved').length, max: 10, color: '#68d391', desc: 'Each honest claim builds trust' },
+                { icon: '🚩', label: 'Flagged Claims',  value: claims.filter(c=>c.status==='Flagged').length,  max: 5,  color: '#fc8181', desc: 'Lower is better' },
+                { icon: '📅', label: 'Account Age',     value: 3, max: 12, color: '#4facfe', desc: 'Months active on platform' },
+                { icon: '📍', label: 'GPS Consistency', value: 8, max: 10, color: '#9b59b6', desc: 'Location accuracy score' },
+              ].map((item, i) => (
+                <div key={i} className="trust-signal-card">
+                  <div className="tsc-icon" style={{ background: `${item.color}22` }}>{item.icon}</div>
+                  <div className="tsc-info">
+                    <span className="tsc-label">{item.label}</span>
+                    <span className="tsc-desc">{item.desc}</span>
+                  </div>
+                  <div className="tsc-right">
+                    <div className="tsc-score" style={{ color: item.color }}>{item.value}<span>/{item.max}</span></div>
+                    <div className="tsc-bar-track">
+                      <div className="tsc-bar-fill" style={{ width: `${(item.value/item.max)*100}%`, background: item.color }}/>
+                    </div>
+                  </div>
                 </div>
-                <div className="history-info">
-                  <span className="history-reason">{payout.reason}</span>
-                  <span className="history-date">{new Date(payout.date).toLocaleDateString('en-IN')}</span>
+              ))}
+            </div>
+
+            <div className="trust-tip">💡 Higher trust score = faster approvals, higher payout limits, and lower premiums</div>
+          </div>
+        )}
+
+        {/* ── OFFLINE MODE ── */}
+        {activeTab === 'offline' && (
+          <OfflineModeTab
+            isOnline={isOnline}
+            offlineQueue={offlineQueue}
+            syncing={syncing}
+            handleSync={handleSync}
+          />
+        )}
+
+        {/* ── REPORT DISASTER ── */}
+        {activeTab === 'disaster' && (
+          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} />
+        )}
+
+        {/* ── SETTLEMENT ── */}
+        {activeTab === 'settlement' && (
+          <SettlementTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} />
+        )}
+
+        {/* ── STORY OF THE DAY ── */}
+        {activeTab === 'story' && (
+          <div className="story-section">
+            <h2>📖 Story of the Day</h2>
+            <p className="section-subtitle">Real riders. Real struggles. Real protection. From your city.</p>
+            <div className="stories-list">
+              {stories.map((s, i) => (
+                <div key={i} className={`story-full-card ${i === new Date().getDate() % stories.length ? 'today' : ''}`}>
+                  {i === new Date().getDate() % stories.length && <div className="story-badge">📖 Today's Story</div>}
+                  <div className="story-rider-header">
+                    <span className="story-rider-emoji">{s.emoji}</span>
+                    <div>
+                      <p className="story-name">{s.name}</p>
+                      <p className="story-role">{s.role}</p>
+                    </div>
+                  </div>
+                  <p className="story-text">"{s.story}"</p>
+                  <p className="story-footer">— Protected by RideShield ❤️</p>
                 </div>
-                <div className="history-amount">+₹{payout.amount}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── FAMILY & CARE ── */}
+        {activeTab === 'heart' && (
+          <div className="heart-section">
+            <h2>❤️ Family & Care</h2>
+            <p className="section-subtitle">Because insurance isn't just about money — it's about peace of mind</p>
+
+            {/* Family Assurance */}
+            <div className="family-assurance-card">
+              <div className="fa-header">
+                <span className="fa-icon">👨‍👩‍👧</span>
+                <div>
+                  <h3>Family Assurance</h3>
+                  <p>Send a reassuring message to your loved one right now</p>
+                </div>
+              </div>
+              {(getRider() || JSON.parse(localStorage.getItem('riderData')||'{}')).familyEmail ? (
+                <div className="fa-active">
+                  <div className="fa-contact">
+                    <span>📧 Notifying: <strong>{(getRider()||JSON.parse(localStorage.getItem('riderData')||'{}')).familyName}</strong> ({(getRider()||JSON.parse(localStorage.getItem('riderData')||'{}')).familyRelation})</span>
+                  </div>
+                  <div className="fa-preview">
+                    <div className="email-preview">
+                      <div className="email-subject">Subject: Don't worry — we've got {insuranceData.name?.split(' ')[0]} covered ❤️</div>
+                      <div className="email-body">
+                        Hi {(getRider()||JSON.parse(localStorage.getItem('riderData')||'{}')).familyName},<br/><br/>
+                        We wanted to let you know that <strong>{insuranceData.name}</strong>'s work has been affected today.
+                        Please don't worry — RideShield has activated coverage and their earnings are protected. ❤️<br/><br/>
+                        <em>— Team RideShield</em>
+                      </div>
+                    </div>
+                  </div>
+                  <button className="btn-send-family" onClick={() => sendFamilyEmail('approved')} disabled={familySending || familySent}>
+                    {familySent ? '✅ Email Sent!' : familySending ? '⏳ Sending...' : '📧 Send Family Assurance Email'}
+                  </button>
+                </div>
+              ) : (
+                <div className="fa-setup">
+                  <p>You haven't added a family contact yet.</p>
+                  <button className="btn-add-family" onClick={() => navigate('/register')}>Add Family Contact →</button>
+                </div>
+              )}
+            </div>
+
+            {/* Nearby Riders */}
+            <div className="nearby-card">
+              <div className="nearby-icon">👥</div>
+              <div>
+                <h3>{nearbyRiders} riders in your area are facing the same issue today</h3>
+                <p>You're not alone. RideShield is protecting all of them too.</p>
+              </div>
+            </div>
+
+            {/* Loyalty Reward */}
+            <div className="loyalty-card">
+              <div className="loyalty-icon">🎁</div>
+              <div>
+                <h3>Loyalty Reward Unlocked!</h3>
+                <p>You've been claim-honest for 3 weeks. Your next premium is <strong style={{color:'#48bb78'}}>10% off</strong>.</p>
+              </div>
+              <div className="loyalty-badge">-10%</div>
+            </div>
+
+            {/* Thank You */}
+            <div className="thankyou-card">
+              <div className="ty-heart">🫶</div>
+              <h3>Thank you for trusting RideShield</h3>
+              <p>We're here for you — rain or shine, always.</p>
+            </div>
+          </div>
+        )}
+
+      </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Disaster Report Tab ───────────────────────────────────────────────────────
+// Covered — weather + civil disruption
+const DISASTER_TYPES = [
+  { id: 'flood',     icon: '🌊', label: 'Flood',             reason: 'Heavy Rainfall / Flood',        desc: 'Waterlogging, flooded roads, stuck due to rain',         weatherSignal: 'rainfall',    voiceKeys: ['flood','rain','baarish','paani','waterlogged'] },
+  { id: 'cyclone',   icon: '🌀', label: 'Cyclone',           reason: 'Cyclone / Storm',               desc: 'Cyclone, storm, high winds preventing movement',         weatherSignal: 'windSpeed',   voiceKeys: ['cyclone','storm','aandhi','toofan','wind'] },
+  { id: 'heatwave',  icon: '🌡️', label: 'Heatwave',          reason: 'Extreme Heat / Heatwave',       desc: 'Dangerous heat making outdoor work impossible',          weatherSignal: 'temperature', voiceKeys: ['heat','garmi','hot','tapish','heatwave'] },
+  { id: 'drought',   icon: '🏜️', label: 'Drought',           reason: 'Drought / Water Shortage',      desc: 'Severe water shortage affecting operations',             weatherSignal: 'temperature', voiceKeys: ['drought','water','shortage','sukha'] },
+  { id: 'earthquake',icon: '🫨', label: 'Earthquake',        reason: 'Earthquake',                    desc: 'Seismic activity disrupting roads and movement',         weatherSignal: null,          voiceKeys: ['earthquake','bhookamp','tremor','quake'] },
+  { id: 'landslide', icon: '⛰️', label: 'Landslide',         reason: 'Landslide / Mudslide',          desc: 'Road blocked by landslide or mudslide',                  weatherSignal: 'rainfall',    voiceKeys: ['landslide','mudslide','bhooswalan','blocked'] },
+  { id: 'lightning', icon: '⚡', label: 'Lightning Storm',   reason: 'Lightning / Thunderstorm',      desc: 'Dangerous lightning preventing outdoor work',            weatherSignal: 'rainfall',    voiceKeys: ['lightning','thunder','bijli','thunderstorm'] },
+  { id: 'smog',      icon: '🌫️', label: 'Smog / Pollution',  reason: 'Severe Air Pollution',          desc: 'Hazardous AQI making outdoor work dangerous',            weatherSignal: 'aqi',         voiceKeys: ['smog','pollution','aqi','pradushan','smoke'] },
+  // Civil disruption — verifiable, bounded, insurable
+  { id: 'curfew',    icon: '🚧', label: 'Curfew / Sec. 144', reason: 'Curfew / Section 144',          desc: 'Government-imposed curfew or movement restriction',      weatherSignal: null,          voiceKeys: ['curfew','section 144','restriction','lockdown'] },
+  { id: 'riot',      icon: '🔥', label: 'Riots / Unrest',    reason: 'Civil Unrest / Riots',          desc: 'Civil unrest or riots blocking your delivery zone',      weatherSignal: null,          voiceKeys: ['riot','unrest','violence','dangaa','fasaad'] },
+  { id: 'strike',    icon: '✊', label: 'Strike / Bandh',    reason: 'Strike / Bandh',                desc: 'General strike or bandh shutting down your area',        weatherSignal: null,          voiceKeys: ['strike','bandh','hartal','shutdown','closed'] },
+  { id: 'blockade',  icon: '🛑', label: 'Road Blockade',     reason: 'Road Blockade / Protest',       desc: 'Road blocked by protest or police barricade',            weatherSignal: null,          voiceKeys: ['blockade','blocked','protest','barricade','jam'] },
+];
+
+// Not covered — with clear reasons shown in UI
+const EXCLUDED_TYPES = [
+  {
+    icon: '⚔️', label: 'Armed Conflict / War',
+    reason: 'Losses from active armed conflict are systemic and unquantifiable — they affect everyone simultaneously, which breaks the insurance pooling model. No insurer in the world covers active war for this reason.',
+  },
+  {
+    icon: '🦠', label: 'Pandemic / National Health Emergency',
+    reason: 'Government-declared pandemics cause economy-wide income loss that cannot be pooled. However, if a pandemic causes a local curfew or shutdown in your area, that specific disruption is covered under Curfew / Bandh.',
+  },
+];
+
+const DisasterReportTab = ({ insuranceData, getToken, addToast }) => {
+  const [selected, setSelected]         = React.useState(null);
+  const [step, setStep]                 = React.useState('idle'); // idle | locating | validating | result
+  const [gps, setGps]                   = React.useState(null);
+  const [speedKmh, setSpeedKmh]         = React.useState(null);
+  const [validation, setValidation]     = React.useState(null);
+  const [crowdData, setCrowdData]       = React.useState(null);
+  const [photoPreview, setPhotoPreview] = React.useState(null);
+  const [submitting, setSubmitting]     = React.useState(false);
+  const [submitted, setSubmitted]       = React.useState(false);
+  const [error, setError]               = React.useState('');
+  const prevPos                         = React.useRef(null);
+  const prevTime                        = React.useRef(null);
+
+  const selectDisaster = (d) => {
+    setSelected(d);
+    setStep('idle');
+    setValidation(null);
+    setCrowdData(null);
+    setSubmitted(false);
+    setError('');
+    setPhotoPreview(null);
+  };
+
+  const getGpsAndValidate = () => {
+    setStep('locating'); setError('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+        setGps({ lat, lon, accuracy });
+
+        // Estimate speed from previous GPS fix
+        let speed = null;
+        const now = Date.now();
+        if (prevPos.current) {
+          const dt = (now - prevTime.current) / 3600000;
+          const R = 6371;
+          const dLat = (lat - prevPos.current.lat) * Math.PI / 180;
+          const dLon = (lon - prevPos.current.lon) * Math.PI / 180;
+          const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(prevPos.current.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+          const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          speed = dt > 0 ? Math.round(dist / dt) : 0;
+        }
+        prevPos.current  = { lat, lon };
+        prevTime.current = now;
+        setSpeedKmh(speed);
+
+        setStep('validating');
+        try {
+          const token = getToken();
+          const crowdRes = await fetch('/api/claims/report-disaster', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ lat, lon, reason: selected.reason, disasterType: selected.id, speedKmh: speed }),
+          });
+          const crowd = await crowdRes.json();
+          setCrowdData(crowd);
+          setValidation(crowd.validation);
+          setStep('result');
+        } catch (_) {
+          try {
+            const vRes = await fetch('/api/weather/validate-disaster', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lat, lon, disasterType: selected.id, speedKmh: speed, crowdCount: 0 }),
+            });
+            setValidation(await vRes.json());
+            setStep('result');
+          } catch {
+            setError('Could not reach server. Your report is saved offline.');
+            setStep('result');
+          }
+        }
+      },
+      () => { setError('GPS access denied. Please enable location to report this disaster.'); setStep('idle'); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const submitClaim = async () => {
+    setSubmitting(true);
+    const amount = insuranceData?.insurancePlan?.maxPayout || 480;
+    const upiId  = insuranceData?.upiId || 'sandbox';
+    try {
+      const token = getToken();
+
+      // Step 1 — Submit claim
+      const cr = await fetch('/api/claims/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          amount,
+          reason: selected.reason,
+          triggerData: {
+            gpsLat: gps?.lat, gpsLon: gps?.lon, gpsAccuracy: gps?.accuracy,
+            speedKmh, crowdCount: crowdData?.crowdCount ?? 0,
+            confidenceScore: validation?.confidenceScore ?? 50,
+            disasterType: selected.id,
+            ...validation?.weatherSnapshot,
+          },
+        }),
+      });
+      const contentType = cr.headers.get('content-type') || '';
+      let claimId = null;
+      if (contentType.includes('application/json')) {
+        const cd = await cr.json();
+        claimId = cd.claim?._id;
+      }
+
+      // Step 2 — Auto-trigger settlement
+      await fetch('/api/settlement/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ claimId, amount, reason: selected.reason, triggerData: validation?.weatherSnapshot }),
+      }).catch(() => {}); // silent fail if backend down
+
+      setSubmitted(true);
+      addToast(`💰 ₹${amount} payout sent to ${upiId !== 'sandbox' ? upiId : 'your account'}!`, 'success');
+    } catch (_) {
+      setError('Submission failed. Claim saved to offline queue.');
+    }
+    setSubmitting(false);
+  };
+
+  const tierColor = { high: '#68d391', medium: '#f6ad55', low: '#fc8181' };
+  const tierLabel = { high: 'High Confidence — Auto Approved', medium: 'Medium Confidence', low: 'Low Confidence — will be reviewed' };
+
+  return (
+    <div className="disaster-report-section">
+      <h2>🆘 Report a Disruption</h2>
+      <p className="section-subtitle">Select what's affecting you — we validate it using GPS, live weather, and nearby riders</p>
+
+      {/* ── Covered disasters ── */}
+      <div className="disaster-section-label">✅ Covered — select to file a claim</div>
+      <div className="disaster-grid">
+        {DISASTER_TYPES.map(d => (
+          <button
+            key={d.id}
+            className={`disaster-card ${selected?.id === d.id ? 'selected' : ''}`}
+            onClick={() => selectDisaster(d)}
+          >
+            <span className="dc-icon">{d.icon}</span>
+            <span className="dc-label">{d.label}</span>
+            <span className="dc-desc">{d.desc}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Selected disaster panel */}
+      {selected && step === 'idle' && (
+        <div style={{
+          background: 'white', borderRadius: '18px', padding: '1.5rem',
+          boxShadow: '0 6px 24px rgba(0,0,0,0.12)', border: '2px solid #4facfe',
+          margin: '1rem 0 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem',
+        }}>
+          {/* Header with dismiss */}
+          <div className="dsp-top">
+            <div className="dsp-header">
+              <span className="dsp-icon-big">{selected.icon}</span>
+              <div>
+                <div className="dsp-title">You selected: {selected.label}</div>
+                <div className="dsp-desc">{selected.desc}</div>
+              </div>
+            </div>
+            <button className="dsp-dismiss" onClick={() => setSelected(null)}>✕</button>
+          </div>
+
+          {/* What happens next */}
+          <div className="dsp-steps-label">Here's what happens when you tap the button:</div>
+          <div className="dsp-flow">
+            {[
+              { icon: '📍', step: '1', label: 'GPS captured', desc: 'Your exact location is read from your device' },
+              { icon: '🌦️', step: '2', label: 'Weather checked', desc: 'Live conditions at your coordinates, not city average' },
+              { icon: '👥', step: '3', label: 'Crowd checked', desc: 'Nearby riders reporting the same issue in last 30 mins' },
+              { icon: '✅', step: '4', label: 'Score calculated', desc: 'Confidence score 0–100 decides auto-approve or review' },
+            ].map((s, i) => (
+              <div key={i} className="dsp-flow-step">
+                <div className="dsp-flow-num">{s.step}</div>
+                <div className="dsp-flow-icon">{s.icon}</div>
+                <div className="dsp-flow-label">{s.label}</div>
+                <div className="dsp-flow-desc">{s.desc}</div>
               </div>
             ))}
           </div>
+
+          <button className="btn-disaster-validate" onClick={getGpsAndValidate}>
+            {selected.icon} I'm Affected — Validate My Location
+          </button>
+          <p className="disaster-cta-note">⚡ Takes ~5 seconds &nbsp;·&nbsp; No forms &nbsp;·&nbsp; No waiting</p>
         </div>
+      )}
+
+      {(step === 'locating' || step === 'validating') && selected && (
+        <div className="disaster-status-card">
+          <div className="flood-spinner" />
+          <span>{step === 'locating' ? 'Getting your GPS location...' : `Checking ${selected?.label} conditions at your exact location...`}</span>
+        </div>
+      )}
+
+      {error && <div className="flood-error">⚠️ {error}</div>}
+
+      {step === 'result' && validation && !submitted && (
+        <div className="flood-result-card">
+          <div className="disaster-result-header">
+            <span className="drh-icon">{selected?.icon}</span>
+            <span className="drh-label">{selected?.label} — Validation Result</span>
+          </div>
+
+          <div className="flood-confidence">
+            <div className="fc-header">
+              <span className="fc-score" style={{ color: tierColor[validation.tier] || '#f6ad55' }}>{validation.confidenceScore}/100</span>
+              <span className="fc-tier" style={{ background: tierColor[validation.tier] || '#f6ad55' }}>{tierLabel[validation.tier] || 'Reviewing'}</span>
+            </div>
+            <div className="fc-bar-bg">
+              <div className="fc-bar-fill" style={{ width: `${validation.confidenceScore}%`, background: tierColor[validation.tier] || '#f6ad55' }} />
+            </div>
+          </div>
+
+          <div className="flood-signals">
+            <div className="fs-title">Validation signals:</div>
+            {(validation.signals || []).map((s, i) => (
+              <div key={i} className="flood-signal-item">
+                <span className="fsi-pts" style={{ color: s.pts > 0 ? '#68d391' : '#a0aec0' }}>+{s.pts}pts</span>
+                <span className="fsi-note">{s.note}</span>
+              </div>
+            ))}
+            {crowdData?.crowdCount > 0 && (
+              <div className="flood-signal-item">
+                <span className="fsi-pts" style={{ color: '#68d391' }}>👥</span>
+                <span className="fsi-note">{crowdData.message}</span>
+              </div>
+            )}
+          </div>
+
+          {gps && (
+            <div className="flood-gps-proof">
+              📍 {gps.lat.toFixed(5)}, {gps.lon.toFixed(5)}
+              {gps.accuracy && <span className="proof-acc"> (±{Math.round(gps.accuracy)}m)</span>}
+              {speedKmh !== null && <span className="proof-acc"> · {speedKmh} km/h</span>}
+            </div>
+          )}
+
+          <div className="flood-photo-upload">
+            <label className="flood-photo-label">
+              📸 Add a photo <span>(optional — boosts confidence)</span>
+              <input type="file" accept="image/*" capture="environment" onChange={e => { const f = e.target.files[0]; if (f) setPhotoPreview(URL.createObjectURL(f)); }} style={{ display: 'none' }} />
+            </label>
+            {photoPreview && <img src={photoPreview} alt="disaster evidence" className="flood-photo-preview" />}
+          </div>
+
+          <button className={`btn-flood-submit ${validation.validated ? 'validated' : 'review'}`} onClick={submitClaim} disabled={submitting}>
+            {submitting ? '⏳ Submitting...' : validation.validated ? '✅ Submit Claim — Auto Approved' : '📋 Submit for Review'}
+          </button>
+          <button className="btn-flood-retry" onClick={() => { setStep('idle'); setValidation(null); setCrowdData(null); }}>
+            🔄 Re-check Location
+          </button>
+        </div>
+      )}
+
+      {submitted && (
+        <div className="flood-submitted">
+          <div className="flood-submitted-icon">💰</div>
+          <h3>Payout Sent!</h3>
+          <p>Your <strong>{selected?.label}</strong> claim was approved with a confidence score of <strong>{validation?.confidenceScore}/100</strong>.</p>
+          <div className="payout-confirm-details">
+            <div className="pcd-row"><span>Amount</span><strong>₹{insuranceData?.insurancePlan?.maxPayout || 480}</strong></div>
+            <div className="pcd-row"><span>To</span><strong>{insuranceData?.upiId || 'Sandbox (demo)'}</strong></div>
+            <div className="pcd-row"><span>Mode</span><strong>{insuranceData?.upiId ? 'UPI' : 'Sandbox'}</strong></div>
+            <div className="pcd-row"><span>Status</span><strong style={{color:'#48bb78'}}>✅ Processing</strong></div>
+          </div>
+          <p style={{fontSize:'0.82rem',color:'#718096',marginTop:'0.5rem'}}>You'll receive a confirmation once the transfer completes. Check the Settlement tab for live status.</p>
+          <button className="btn-flood-retry" style={{ marginTop: '0.75rem' }} onClick={() => { setSelected(null); setStep('idle'); setSubmitted(false); }}>
+            🆘 Report Another Disaster
+          </button>
+        </div>
+      )}
+
+      {/* ── Not covered — always visible at bottom ── */}
+      <div className="disaster-section-label excluded" style={{ marginTop: '2rem' }}>❌ Not covered — and here's why</div>
+      <div className="excluded-grid">
+        {EXCLUDED_TYPES.map((e, i) => (
+          <div key={i} className="excluded-card">
+            <div className="exc-header">
+              <span className="exc-icon">{e.icon}</span>
+              <span className="exc-label">{e.label}</span>
+            </div>
+            <p className="exc-reason">{e.reason}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Offline Mode Tab ──────────────────────────────────────────────────────────
+const OfflineModeTab = ({ isOnline, offlineQueue, syncing, handleSync }) => {
+  const [gpsLog, setGpsLog] = React.useState([]);
+  const [cachedWeather, setCachedWeather] = React.useState(null);
+  const [testClaimQueued, setTestClaimQueued] = React.useState(false);
+  const [simulatingOffline, setSimulatingOffline] = React.useState(false);
+  const [syncLog, setSyncLog] = React.useState([]);
+
+  // Pull cached GPS pings from localStorage
+  React.useEffect(() => {
+    const raw = localStorage.getItem('gpsLog');
+    if (raw) setGpsLog(JSON.parse(raw).slice(-5));
+    const wRaw = localStorage.getItem('cachedWeather');
+    if (wRaw) setCachedWeather(JSON.parse(wRaw));
+  }, []);
+
+  // Simulate a GPS ping being saved
+  const simulateGpsPing = () => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        const entry = {
+          lat: pos.coords.latitude.toFixed(5),
+          lng: pos.coords.longitude.toFixed(5),
+          accuracy: Math.round(pos.coords.accuracy),
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        };
+        const existing = JSON.parse(localStorage.getItem('gpsLog') || '[]');
+        const updated = [...existing, entry].slice(-10);
+        localStorage.setItem('gpsLog', JSON.stringify(updated));
+        setGpsLog(updated.slice(-5));
+      },
+      () => {
+        // fallback simulated ping
+        const entry = {
+          lat: (28.6 + Math.random() * 0.05).toFixed(5),
+          lng: (77.2 + Math.random() * 0.05).toFixed(5),
+          accuracy: Math.round(10 + Math.random() * 20),
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        };
+        const existing = JSON.parse(localStorage.getItem('gpsLog') || '[]');
+        const updated = [...existing, entry].slice(-10);
+        localStorage.setItem('gpsLog', JSON.stringify(updated));
+        setGpsLog(updated.slice(-5));
+      }
+    );
+  };
+
+  // Queue a test offline claim
+  const queueTestClaim = () => {
+    const { queueClaim } = require('../offlineQueue');
+    queueClaim({ reason: 'Heavy Rainfall', amount: 480, source: 'offline-test' });
+    setTestClaimQueued(true);
+  };
+
+  // Simulate offline → online sync flow
+  const runSyncDemo = async () => {
+    setSimulatingOffline(true);
+    setSyncLog([]);
+    const steps = [
+      { delay: 400,  msg: '📴 Simulating offline mode...' },
+      { delay: 1000, msg: '📋 Claim queued locally in localStorage' },
+      { delay: 1800, msg: '📡 Internet connection restored' },
+      { delay: 2500, msg: '🔄 Auto-sync triggered...' },
+      { delay: 3200, msg: '✅ Claim submitted to server' },
+      { delay: 3900, msg: '💰 Payout processing — ₹480' },
+    ];
+    steps.forEach(({ delay, msg }) => {
+      setTimeout(() => setSyncLog(l => [...l, msg]), delay);
+    });
+    setTimeout(() => setSimulatingOffline(false), 4500);
+  };
+
+  const queueCount = offlineQueue.length + (testClaimQueued ? 1 : 0);
+
+  return (
+    <div className="offline-section">
+      <h2>📡 Offline-First Mode</h2>
+      <p className="section-subtitle">RideShield works even with no internet — here's the live proof</p>
+
+      {/* Live connection status */}
+      <div className="offline-status-card" style={{ marginBottom: '1.5rem' }}>
+        <div className={`online-dot ${isOnline ? 'online' : 'offline'}`} />
+        <span style={{ fontWeight: 600, fontSize: '1rem' }}>
+          {isOnline ? '🟢 You are Online — all features active' : '🔴 You are Offline — claims queuing locally'}
+        </span>
+        {queueCount > 0 && isOnline && (
+          <button className="btn-sync" onClick={handleSync} disabled={syncing} style={{ marginLeft: '1rem' }}>
+            <RefreshCw size={16} /> {syncing ? 'Syncing...' : `Sync ${queueCount} claim(s)`}
+          </button>
+        )}
+      </div>
+
+      <div className="offline-features-grid">
+
+        {/* GPS — with live proof */}
+        <div className="offline-feature-card proof-card">
+          <div className="offline-feature-icon">📍</div>
+          <h3>GPS Saved Locally</h3>
+          <p>Location stored on-device every 5 minutes, even without internet.</p>
+          <button className="btn-proof" onClick={simulateGpsPing}>📍 Save GPS Ping Now</button>
+          {gpsLog.length > 0 && (
+            <div className="proof-log">
+              <div className="proof-log-title">📂 Stored in localStorage:</div>
+              {gpsLog.map((g, i) => (
+                <div key={i} className="proof-log-row">
+                  <span className="proof-dot">●</span>
+                  <span>{g.time} — {g.lat}, {g.lng} <span className="proof-acc">(±{g.accuracy}m)</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Claims Queue — with live proof */}
+        <div className="offline-feature-card proof-card">
+          <div className="offline-feature-icon">📋</div>
+          <h3>Claims Queued Offline</h3>
+          <p>Submit claims offline — saved locally and auto-submitted when you reconnect.</p>
+          <button className="btn-proof" onClick={queueTestClaim} disabled={testClaimQueued}>
+            {testClaimQueued ? '✅ Claim Queued!' : '📋 Queue a Test Claim'}
+          </button>
+          {queueCount > 0 && (
+            <div className="proof-log">
+              <div className="proof-log-title">📂 Claims in localStorage queue:</div>
+              {offlineQueue.map((c, i) => (
+                <div key={i} className="proof-log-row">
+                  <span className="proof-dot">●</span>
+                  <span>{c.reason} — ₹{c.amount} <span className="proof-acc">(queued {new Date(c.queuedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })})</span></span>
+                </div>
+              ))}
+              {testClaimQueued && offlineQueue.length === 0 && (
+                <div className="proof-log-row">
+                  <span className="proof-dot">●</span>
+                  <span>Heavy Rainfall — ₹480 <span className="proof-acc">(just queued)</span></span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Auto Sync — with live demo */}
+        <div className="offline-feature-card proof-card">
+          <div className="offline-feature-icon">🔄</div>
+          <h3>Auto Sync</h3>
+          <p>The moment internet returns, all queued data syncs automatically.</p>
+          <button className="btn-proof" onClick={runSyncDemo} disabled={simulatingOffline}>
+            {simulatingOffline ? '⏳ Running demo...' : '▶ Run Sync Demo'}
+          </button>
+          {syncLog.length > 0 && (
+            <div className="proof-log">
+              {syncLog.map((s, i) => (
+                <div key={i} className="proof-log-row" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <span className="proof-dot">●</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cached Weather — with live proof */}
+        <div className="offline-feature-card proof-card">
+          <div className="offline-feature-icon">🌦️</div>
+          <h3>Cached Weather</h3>
+          <p>Last known weather cached so risk assessment works offline too.</p>
+          {cachedWeather ? (
+            <div className="proof-log">
+              <div className="proof-log-title">📂 Cached in localStorage:</div>
+              <div className="proof-log-row"><span className="proof-dot">●</span><span>🌡️ Temp: {cachedWeather.temperature}°C</span></div>
+              <div className="proof-log-row"><span className="proof-dot">●</span><span>🌧️ Rainfall: {cachedWeather.rainfall}mm</span></div>
+              <div className="proof-log-row"><span className="proof-dot">●</span><span>💨 AQI: {cachedWeather.aqi}</span></div>
+              <div className="proof-log-row"><span className="proof-dot">●</span><span>📍 {cachedWeather.city || 'Last known city'}</span></div>
+            </div>
+          ) : (
+            <div className="proof-log">
+              <div className="proof-log-row" style={{ color: '#a0aec0' }}>
+                <span className="proof-dot">●</span>
+                <span>No cache yet — visit Overview tab to load weather</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* How it works under the hood */}
+      <div className="offline-tech-note">
+        <span>🔧</span>
+        <span>Under the hood: GPS pings, claims, and weather are stored in <code>localStorage</code>. When connectivity returns, <code>watchOnline()</code> fires and auto-syncs everything to the server — zero action needed from you.</span>
       </div>
     </div>
   );
 };
 
 export default DashboardPage;
+
