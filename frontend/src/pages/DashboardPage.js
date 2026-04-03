@@ -68,6 +68,99 @@ export const downloadPayoutReceipt = ({ riderName, upiId, amount, reason, txnId,
   URL.revokeObjectURL(url);
 };
 
+// ── OTP Verification Popup (before payout is released) ───────────────────────
+const OTPVerifyPopup = ({ pending, onVerified, onCancel }) => {
+  const [otp, setOtp] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [verifying, setVerifying] = React.useState(false);
+  const [countdown, setCountdown] = React.useState(0);
+  // Simulated OTP — in production this comes from Razorpay/SMS API
+  const correctOtp = React.useRef(Math.floor(100000 + Math.random() * 900000).toString());
+
+  React.useEffect(() => {
+    if (!pending) return;
+    // Auto-send OTP when popup opens
+    setSent(true);
+    setCountdown(30);
+    console.log('🔐 OTP (demo):', correctOtp.current); // visible in console for demo
+  }, [pending]);
+
+  React.useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) { setError('Enter 6-digit OTP'); return; }
+    setVerifying(true);
+    await new Promise(r => setTimeout(r, 800)); // simulate verify call
+    if (otp === correctOtp.current) {
+      onVerified();
+    } else {
+      setError('Incorrect OTP. Try again.');
+      setVerifying(false);
+    }
+  };
+
+  const resend = () => {
+    correctOtp.current = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('🔐 New OTP (demo):', correctOtp.current);
+    setCountdown(30); setOtp(''); setError('');
+  };
+
+  if (!pending) return null;
+
+  return (
+    <div className="payout-receipt-overlay">
+      <div className="payout-receipt-modal" style={{maxWidth:'380px'}}>
+        <div className="prm-header" style={{background:'linear-gradient(135deg,#1e3a5f,#553c9a)'}}>
+          <div className="prm-check">🔐</div>
+          <h2>Verify Your Identity</h2>
+          <p>OTP sent to your registered mobile</p>
+        </div>
+        <div className="prm-body">
+          <div className="prm-amount" style={{fontSize:'1.1rem',color:'#553c9a',marginBottom:'0.3rem'}}>
+            Payout: ₹{pending?.amount}
+          </div>
+          <div className="prm-reason">{pending?.reason}</div>
+
+          {sent && (
+            <div style={{background:'#f0fff4',border:'1px solid #48bb78',borderRadius:'8px',padding:'0.7rem',textAlign:'center',fontSize:'0.82rem',color:'#276749',margin:'0.8rem 0'}}>
+              ✅ OTP sent to your mobile number
+              <br/><small style={{color:'#718096'}}>(Check browser console for demo OTP)</small>
+            </div>
+          )}
+
+          <div style={{margin:'1rem 0'}}>
+            <input
+              type="text" maxLength={6} placeholder="Enter 6-digit OTP"
+              value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/,'')); setError(''); }}
+              style={{width:'100%',padding:'0.9rem',fontSize:'1.4rem',letterSpacing:'0.5rem',textAlign:'center',border:'2px solid #e2e8f0',borderRadius:'10px',outline:'none',boxSizing:'border-box'}}
+              onKeyDown={e => e.key === 'Enter' && handleVerify()}
+            />
+            {error && <p style={{color:'#e53e3e',fontSize:'0.82rem',margin:'0.4rem 0 0',textAlign:'center'}}>{error}</p>}
+          </div>
+
+          <div style={{textAlign:'center',fontSize:'0.8rem',color:'#718096',marginBottom:'0.5rem'}}>
+            {countdown > 0
+              ? `Resend OTP in ${countdown}s`
+              : <button onClick={resend} style={{background:'none',border:'none',color:'#553c9a',cursor:'pointer',fontWeight:'700',fontSize:'0.82rem'}}>Resend OTP</button>
+            }
+          </div>
+        </div>
+        <div className="prm-actions">
+          <button className="prm-btn-close" style={{background:'#e2e8f0',color:'#2d3748'}} onClick={onCancel}>Cancel</button>
+          <button className="prm-btn-close" onClick={handleVerify} disabled={verifying || otp.length !== 6}>
+            {verifying ? '⏳ Verifying...' : '✅ Verify & Release Payout'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PayoutReceiptPopup = ({ receipt, onClose }) => {
   if (!receipt) return null;
   return (
@@ -389,6 +482,13 @@ const DashboardPage = () => {
 
   // Payout receipt popup
   const [payoutReceipt, setPayoutReceipt] = useState(null);
+  // OTP verification — holds pending payout until rider verifies
+  const [pendingPayout, setPendingPayout] = useState(null);
+
+  // Call this instead of setPayoutReceipt directly — goes through OTP first
+  const triggerPayout = React.useCallback((receiptData) => {
+    setPendingPayout(receiptData);
+  }, []);
 
   // Fraud tester state (kept for AI Defense Engine reference)
   const [fraudTest, setFraudTest] = useState({ amount: 500, reason: 'Heavy Rainfall', claimsThisWeek: 1, hasGPS: true, sameDay: false }); // eslint-disable-line no-unused-vars
@@ -495,7 +595,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
         setSimStep(i + 1);
         if (i === simSteps.length - 1) {
           addToast('💰 Payout of ₹480 sent to your account!', 'success');
-          setPayoutReceipt({
+          triggerPayout({
             riderName: insuranceData?.name,
             upiId:     insuranceData?.upiId,
             amount:    480,
@@ -684,7 +784,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
             setVoiceResult(r => r ? { ...r, status: 'Approved' } : r);
             speakResponse(approvedMsg, isHindi);
             // Show payout receipt popup
-            setPayoutReceipt({
+            triggerPayout({
               riderName: insuranceData?.name,
               upiId:     insuranceData?.upiId,
               amount,
@@ -921,7 +1021,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
         addNotification(`💸 Settlement pipeline started — ₹${amount} processing`, 'success');
         addToast(`💰 ₹${amount} payout processing — check Settlement tab`, 'success');
         // Show receipt popup with real txn data
-        setPayoutReceipt({
+        triggerPayout({
           riderName: riderInfo?.name,
           upiId:     riderInfo?.upiId,
           amount,
@@ -934,7 +1034,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
         log('💸 Settlement simulated (backend offline)');
         addToast(`💰 ₹${amount} payout simulated (demo mode)`, 'success');
         // Show receipt popup
-        setPayoutReceipt({
+        triggerPayout({
           riderName: riderInfo?.name,
           upiId:     riderInfo?.upiId,
           amount,
@@ -1019,6 +1119,13 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
   return (
     <div className="dashboard-page">
+
+      {/* OTP Verification Popup */}
+      <OTPVerifyPopup
+        pending={pendingPayout}
+        onVerified={() => { setPayoutReceipt(pendingPayout); setPendingPayout(null); }}
+        onCancel={() => setPendingPayout(null)}
+      />
 
       {/* Payout Receipt Popup */}
       <PayoutReceiptPopup receipt={payoutReceipt} onClose={() => setPayoutReceipt(null)}/>
@@ -1719,7 +1826,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
         {/* ── REPORT DISASTER ── */}
         {activeTab === 'disaster' && (
-          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} onPayout={setPayoutReceipt}/>
+          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} onPayout={triggerPayout}/>
         )}
 
         {/* ── SETTLEMENT ── */}
@@ -1976,7 +2083,6 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout }) => {
 
       setSubmitted(true);
       addToast(`💰 ₹${amount} payout sent to ${upiId !== 'sandbox' ? upiId : 'your account'}!`, 'success');
-      // Show receipt popup
       if (onPayout) onPayout({
         riderName: insuranceData?.name,
         upiId:     upiId !== 'sandbox' ? upiId : insuranceData?.upiId,
