@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/Gig-Worker-Parametric-Insurance/static/css/main.70ee9d96.css",
-    "main.js": "/Gig-Worker-Parametric-Insurance/static/js/main.54d33ba0.js",
+    "main.css": "/Gig-Worker-Parametric-Insurance/static/css/main.161e29de.css",
+    "main.js": "/Gig-Worker-Parametric-Insurance/static/js/main.051b3428.js",
     "index.html": "/Gig-Worker-Parametric-Insurance/index.html",
-    "main.70ee9d96.css.map": "/Gig-Worker-Parametric-Insurance/static/css/main.70ee9d96.css.map",
-    "main.54d33ba0.js.map": "/Gig-Worker-Parametric-Insurance/static/js/main.54d33ba0.js.map"
+    "main.161e29de.css.map": "/Gig-Worker-Parametric-Insurance/static/css/main.161e29de.css.map",
+    "main.051b3428.js.map": "/Gig-Worker-Parametric-Insurance/static/js/main.051b3428.js.map"
   },
   "entrypoints": [
-    "static/css/main.70ee9d96.css",
-    "static/js/main.54d33ba0.js"
+    "static/css/main.161e29de.css",
+    "static/js/main.051b3428.js"
   ]
 }
