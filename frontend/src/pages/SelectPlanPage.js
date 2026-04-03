@@ -4,16 +4,6 @@ import { Shield, Check, TrendingUp } from 'lucide-react';
 import { getToken, getRider, saveAuth } from '../auth';
 import './SelectPlanPage.css';
 
-// Load Razorpay script
-const loadRazorpay = () => new Promise(resolve => {
-  if (window.Razorpay) return resolve(true);
-  const script = document.createElement('script');
-  script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-  script.onload = () => resolve(true);
-  script.onerror = () => resolve(false);
-  document.body.appendChild(script);
-});
-
 const PLANS = [
   {
     id: 'starter', name: 'Starter', price: 99, maxPayout: 250, category: 'basic',
@@ -62,7 +52,6 @@ const SelectPlanPage = () => {
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [upiId, setUpiId] = useState(getRider()?.upiId || '');
   const [activating, setActivating] = useState(false);
-  const [verified, setVerified] = useState(false);
 
   const riderData = getRider() || JSON.parse(localStorage.getItem('riderData') || '{}');
   const visiblePlans = activeTab === 'all' ? PLANS : PLANS.filter(p => p.category === activeTab);
