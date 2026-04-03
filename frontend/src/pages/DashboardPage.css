@@ -1541,3 +1541,5 @@
 .honest-badge-card { display: flex; align-items: center; gap: 1.2rem; background: linear-gradient(135deg,#fffbeb,#fef3c7); border: 2px solid #f6d365; border-radius: 16px; padding: 1.4rem; margin-top: 1.5rem; }
 .honest-badge-card h3 { margin: 0 0 0.3rem; color: #1e3a5f; font-size: 1rem; }
 .honest-badge-card p { margin: 0; color: #4a5568; font-size: 0.85rem; line-height: 1.6; }
+
+.tier-img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25)); }

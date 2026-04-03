@@ -1747,70 +1747,42 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
                   {/* SVG tier badge */}
                   <div className="tier-svg-wrap">
                     {trustScore >= 85 ? (
-                      // Diamond
-                      <svg viewBox="0 0 80 80" className="tier-svg">
-                        <defs>
-                          <linearGradient id="dG" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#a8edff"/><stop offset="50%" stopColor="#4facfe"/><stop offset="100%" stopColor="#00c6ff"/>
-                          </linearGradient>
-                        </defs>
-                        <polygon points="40,8 68,28 58,68 22,68 12,28" fill="url(#dG)" stroke="#4facfe" strokeWidth="2"/>
-                        <polygon points="40,8 68,28 40,22" fill="rgba(255,255,255,0.4)"/>
-                        <polygon points="40,22 68,28 58,68 22,68 12,28" fill="rgba(79,172,254,0.3)"/>
-                        <line x1="12" y1="28" x2="68" y2="28" stroke="white" strokeWidth="1.5" opacity="0.6"/>
-                        <polygon points="40,22 12,28 22,68 40,68" fill="rgba(0,0,0,0.1)"/>
-                        <text x="40" y="58" textAnchor="middle" fontSize="9" fill="white" fontWeight="800">DIAMOND</text>
-                      </svg>
+                      // Diamond image
+                      <img
+                        src="https://em-content.zobj.net/source/microsoft-teams/363/gem-stone_1f48e.png"
+                        alt="Diamond"
+                        className="tier-img"
+                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
+                      />
                     ) : trustScore >= 70 ? (
-                      // Gold Medal
-                      <svg viewBox="0 0 80 80" className="tier-svg">
-                        <defs>
-                          <linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#ffe066"/><stop offset="50%" stopColor="#ffd700"/><stop offset="100%" stopColor="#f6a800"/>
-                          </linearGradient>
-                          <linearGradient id="rG" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#ff6b6b"/><stop offset="100%" stopColor="#c0392b"/>
-                          </linearGradient>
-                        </defs>
-                        {/* Ribbon */}
-                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="url(#rG)"/>
-                        <line x1="36" y1="8" x2="36" y2="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-                        <line x1="44" y1="8" x2="44" y2="28" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-                        {/* Medal circle */}
-                        <circle cx="40" cy="52" r="24" fill="url(#gG)" stroke="#f6a800" strokeWidth="2"/>
-                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
-                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">1</text>
-                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">GOLD</text>
-                      </svg>
+                      // Gold medal image
+                      <img
+                        src="https://em-content.zobj.net/source/microsoft-teams/363/1st-place-medal_1f947.png"
+                        alt="Gold"
+                        className="tier-img"
+                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
+                      />
                     ) : trustScore >= 55 ? (
-                      // Silver Medal
-                      <svg viewBox="0 0 80 80" className="tier-svg">
-                        <defs>
-                          <linearGradient id="sG" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#e8e8e8"/><stop offset="50%" stopColor="#c0c0c0"/><stop offset="100%" stopColor="#a0a0a0"/>
-                          </linearGradient>
-                        </defs>
-                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="#4facfe"/>
-                        <circle cx="40" cy="52" r="24" fill="url(#sG)" stroke="#a0a0a0" strokeWidth="2"/>
-                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
-                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">2</text>
-                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">SILVER</text>
-                      </svg>
+                      // Silver medal image
+                      <img
+                        src="https://em-content.zobj.net/source/microsoft-teams/363/2nd-place-medal_1f948.png"
+                        alt="Silver"
+                        className="tier-img"
+                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
+                      />
                     ) : (
-                      // Bronze Medal
-                      <svg viewBox="0 0 80 80" className="tier-svg">
-                        <defs>
-                          <linearGradient id="bG2" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#f0a070"/><stop offset="50%" stopColor="#cd7f32"/><stop offset="100%" stopColor="#a0522d"/>
-                          </linearGradient>
-                        </defs>
-                        <polygon points="32,8 48,8 52,28 40,22 28,28" fill="#68d391"/>
-                        <circle cx="40" cy="52" r="24" fill="url(#bG2)" stroke="#a0522d" strokeWidth="2"/>
-                        <circle cx="40" cy="52" r="19" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
-                        <text x="40" y="49" textAnchor="middle" fontSize="14" fill="white" fontWeight="900">3</text>
-                        <text x="40" y="61" textAnchor="middle" fontSize="7" fill="white" fontWeight="700">BRONZE</text>
-                      </svg>
+                      // Bronze medal image
+                      <img
+                        src="https://em-content.zobj.net/source/microsoft-teams/363/3rd-place-medal_1f949.png"
+                        alt="Bronze"
+                        className="tier-img"
+                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }}
+                      />
                     )}
+                    {/* Fallback SVG if image fails */}
+                    <span style={{display:'none', fontSize:'3.5rem'}}>
+                      {trustScore >= 85 ? '💎' : trustScore >= 70 ? '🥇' : trustScore >= 55 ? '🥈' : '🥉'}
+                    </span>
                   </div>
                   <div>
                     <h3>Your Loyalty Tier</h3>
