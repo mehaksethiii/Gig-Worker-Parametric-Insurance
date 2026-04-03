@@ -51,4 +51,25 @@ ture) {
   }
 });
 
+// GET /api/payment/test — verify Razorpay keys are working
+router.get('/test', async (req, res) => {
+  try {
+    // Create a ₹1 test order — if keys are wrong this will throw
+    const order = await razorpay.orders.create({
+      amount: 100, // ₹1 in paise
+      currency: 'INR',
+      receipt: `test_${Date.now()}`,
+    });
+    res.json({
+      success: true,
+      message: '✅ Razorpay is live and working!',
+      orderId: order.id,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      mode: process.env.RAZORPAY_KEY_ID?.startsWith('rzp_test_') ? 'TEST' : 'LIVE',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: `❌ Razorpay error: ${err.message}` });
+  }
+});
+
 module.exports = router;
