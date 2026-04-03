@@ -529,30 +529,33 @@ const DashboardPage = () => {
   // Payout receipt popup
   const [payoutReceipt, setPayoutReceipt] = useState(null);
 
+  // ── Shared daily limit helpers (shared across voice, disaster, weather) ──
+  const getDailyClaimCount = React.useCallback(() => {
+    const today = new Date().toDateString();
+    if (localStorage.getItem('lastClaimDate') !== today) return 0;
+    return parseInt(localStorage.getItem('claimsToday') || '0');
+  }, []);
+
+  const incrementDailyCount = React.useCallback(() => {
+    const today = new Date().toDateString();
+    const cur = localStorage.getItem('lastClaimDate') === today
+      ? parseInt(localStorage.getItem('claimsToday') || '0') : 0;
+    localStorage.setItem('lastClaimDate', today);
+    localStorage.setItem('claimsToday', String(cur + 1));
+  }, []);
+
   // Call this instead of setPayoutReceipt directly — calls backend, updates timeline, bell, then OTP
   const triggerPayout = React.useCallback(async (receiptData) => {
     const token = getToken();
 
-    // Frontend daily limit — max 2 claims per day
-    const today = new Date().toDateString();
-    const lastClaimDate = localStorage.getItem('lastClaimDate');
-    const claimsToday = lastClaimDate === today ? parseInt(localStorage.getItem('claimsToday') || '0') : 0;
-
+    // Frontend daily limit — max 2 claims per day (shared across all claim types)
+    const claimsToday = getDailyClaimCount();
     if (claimsToday >= 2) {
-      addToast('🚫 Daily claim limit reached', 'warning');
-      addNotification(
-        `🚫 Daily Limit Reached — RideShield allows a maximum of 2 claims per day to ensure fair coverage for all riders. Your next claim will be available tomorrow at midnight. If you believe this is an error, contact support.`,
-        'warning'
-      );
-      // Show a proper modal message
-      setPayoutReceipt({
-        limitReached: true,
-        claimsToday,
-        resetTime: 'midnight tonight',
-      });
+      setPayoutReceipt({ limitReached: true, claimsToday });
+      addToast('🚫 Daily claim limit reached — max 2 per day', 'warning');
+      addNotification('🚫 Daily limit reached — 2 claims already made today', 'warning');
       return;
     }
-
     // 1. Call backend settlement
     try {
       const sr = await fetch('/api/settlement/initiate', {
@@ -584,10 +587,8 @@ const DashboardPage = () => {
     addNotification(`💰 ₹${receiptData.amount} payout sent — ${receiptData.reason}`, 'success');
     addToast(`💰 ₹${receiptData.amount} sent to ${receiptData.upiId || 'your UPI'}!`, 'success');
 
-    // Save today's date and increment claim count
-    localStorage.setItem('lastClaimDate', new Date().toDateString());
-    localStorage.setItem('claimsToday', String(claimsToday + 1));
-
+    // Increment shared daily counter
+    incrementDailyCount();
     // 4. Show receipt directly — no OTP
     setPayoutReceipt(receiptData);
   }, []); // eslint-disable-line
@@ -1955,7 +1956,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
         {/* ── REPORT DISASTER ── */}
         {activeTab === 'disaster' && (
-          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} onPayout={triggerPayout}/>
+          <DisasterReportTab insuranceData={insuranceData} getToken={getToken} addToast={addToast} onPayout={triggerPayout} incrementDailyCount={incrementDailyCount} getDailyClaimCount={getDailyClaimCount}/>
         )}
 
         {/* ── SETTLEMENT ── */}
@@ -2094,7 +2095,7 @@ const EXCLUDED_TYPES = [
   },
 ];
 
-const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout }) => {
+const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, incrementDailyCount, getDailyClaimCount }) => {
   const [selected, setSelected]         = React.useState(null);
   const [step, setStep]                 = React.useState('idle'); // idle | locating | validating | result
   const [gps, setGps]                   = React.useState(null);
@@ -2210,6 +2211,14 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout }) => {
     setSubmitting(true);
     const amount = insuranceData?.insurancePlan?.maxPayout || 480;
     const upiId  = insuranceData?.upiId || 'sandbox';
+
+    // Check shared daily limit before submitting
+    const claimsToday = getDailyClaimCount ? getDailyClaimCount() : 0;
+    if (claimsToday >= 2) {
+      setSubmitting(false);
+      if (onPayout) onPayout({ limitReached: true, claimsToday });
+      return;
+    }
     try {
       const token = getToken();
 
@@ -2245,6 +2254,8 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout }) => {
 
       setSubmitted(true);
       addToast(`💰 ₹${amount} payout sent to ${upiId !== 'sandbox' ? upiId : 'your account'}!`, 'success');
+      // Increment shared daily counter
+      if (incrementDailyCount) incrementDailyCount();
       if (onPayout) onPayout({
         riderName: insuranceData?.name,
         upiId:     upiId !== 'sandbox' ? upiId : insuranceData?.upiId,
