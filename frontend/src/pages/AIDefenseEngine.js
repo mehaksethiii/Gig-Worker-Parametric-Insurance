@@ -422,52 +422,107 @@ const AIDefenseEngine = ({ insuranceData, weatherRisk, claims }) => {
           <div className="ade-map-card">
             <div className="ade-pie-title">🇮🇳 City Risk Map</div>
             <div className="ade-india-map">
-              {/* Simplified India outline SVG */}
-              <svg viewBox="0 0 300 340" className="india-svg">
-                <path
-                  d="M120,10 L145,8 L165,15 L185,12 L200,25 L210,20 L225,30 L230,45 L240,55 L245,70
-                     L255,80 L260,95 L255,110 L265,125 L260,140 L250,155 L245,170 L235,185 L225,200
-                     L215,215 L205,228 L195,240 L185,252 L175,262 L165,272 L158,282 L152,292 L148,302
-                     L145,310 L142,302 L138,292 L132,282 L125,272 L115,262 L105,252 L95,240 L85,228
-                     L75,215 L65,200 L55,185 L48,170 L42,155 L35,140 L30,125 L38,110 L35,95 L42,80
-                     L50,65 L58,52 L68,40 L80,30 L92,22 L105,14 Z"
-                  fill="rgba(79,172,254,0.08)" stroke="rgba(79,172,254,0.4)" strokeWidth="1.5"
+              <svg viewBox="0 0 550 600" className="india-svg">
+                <defs>
+                  <filter id="cityGlow">
+                    <feGaussianBlur stdDeviation="2" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+
+                {/* ── Accurate India outline (simplified but recognisable) ── */}
+                {/* Main landmass */}
+                <path d="
+                  M 230,18  L 255,14  L 278,20  L 295,16  L 318,22
+                  L 338,18  L 355,28  L 368,22  L 382,32  L 390,45
+                  L 400,38  L 415,48  L 420,62  L 412,72  L 418,82
+                  L 428,90  L 435,105 L 440,120 L 448,132 L 455,145
+                  L 460,158 L 455,170 L 462,182 L 468,196 L 472,210
+                  L 465,222 L 458,235 L 448,248 L 438,260 L 425,272
+                  L 412,282 L 398,292 L 385,302 L 372,312 L 360,322
+                  L 348,332 L 338,342 L 328,352 L 318,362 L 308,372
+                  L 298,382 L 288,392 L 278,400 L 268,408 L 258,415
+                  L 248,420 L 240,428 L 232,435 L 225,442 L 218,448
+                  L 212,455 L 206,462 L 200,468 L 195,474 L 190,480
+                  L 185,486 L 180,492 L 175,498 L 170,504 L 165,510
+                  L 160,516 L 156,522 L 152,528 L 148,534 L 145,540
+                  L 142,534 L 138,528 L 134,522 L 130,516 L 126,510
+                  L 122,504 L 118,498 L 114,492 L 110,486 L 106,480
+                  L 102,474 L 98,468  L 94,462  L 90,456  L 86,450
+                  L 82,444  L 78,438  L 74,432  L 70,425  L 66,418
+                  L 62,410  L 58,402  L 55,393  L 52,384  L 50,374
+                  L 48,364  L 46,354  L 44,344  L 42,334  L 40,324
+                  L 38,314  L 36,304  L 34,294  L 32,284  L 30,274
+                  L 28,264  L 26,254  L 24,244  L 22,234  L 20,224
+                  L 18,214  L 16,204  L 15,194  L 14,184  L 13,174
+                  L 12,164  L 12,154  L 13,144  L 15,134  L 18,124
+                  L 22,115  L 28,106  L 35,98   L 44,90   L 54,84
+                  L 65,78   L 78,74   L 92,70   L 106,66  L 118,60
+                  L 128,52  L 138,44  L 148,36  L 158,28  L 168,22
+                  L 180,18  L 195,15  L 210,14  L 222,16  Z
+                "
+                  fill="rgba(79,172,254,0.10)"
+                  stroke="rgba(79,172,254,0.55)"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
                 />
-                {/* City dots */}
+
+                {/* Gujarat peninsula bump */}
+                <path d="M 18,214 L 10,220 L 6,232 L 8,244 L 14,252 L 22,256 L 28,264"
+                  fill="rgba(79,172,254,0.10)" stroke="rgba(79,172,254,0.55)" strokeWidth="2"/>
+
+                {/* Northeast states bump */}
+                <path d="M 455,145 L 468,138 L 482,132 L 496,128 L 508,134 L 516,144 L 514,156 L 504,164 L 492,168 L 478,166 L 466,160 L 460,158"
+                  fill="rgba(79,172,254,0.10)" stroke="rgba(79,172,254,0.55)" strokeWidth="2"/>
+
+                {/* Sri Lanka (small island) */}
+                <ellipse cx="200" cy="558" rx="10" ry="14"
+                  fill="rgba(79,172,254,0.08)" stroke="rgba(79,172,254,0.35)" strokeWidth="1.5"/>
+
+                {/* Andaman Islands */}
+                <ellipse cx="500" cy="420" rx="6" ry="18"
+                  fill="rgba(79,172,254,0.08)" stroke="rgba(79,172,254,0.35)" strokeWidth="1.5"/>
+
+                {/* ── City pins — accurate lat/lon mapped to viewBox ── */}
                 {[
-                  { name: 'Delhi',     x: 148, y: 72,  fraud: 78, disruption: 45 },
-                  { name: 'Mumbai',    x: 88,  y: 168, fraud: 32, disruption: 82 },
-                  { name: 'Bangalore', x: 138, y: 238, fraud: 15, disruption: 28 },
-                  { name: 'Hyderabad', x: 148, y: 200, fraud: 45, disruption: 60 },
-                  { name: 'Kolkata',   x: 210, y: 130, fraud: 62, disruption: 55 },
+                  { name: 'Delhi',     x: 230, y: 118, fraud: 78, disruption: 45 },
+                  { name: 'Mumbai',    x: 95,  y: 278, fraud: 32, disruption: 82 },
+                  { name: 'Bangalore', x: 195, y: 400, fraud: 15, disruption: 28 },
+                  { name: 'Hyderabad', x: 220, y: 345, fraud: 45, disruption: 60 },
+                  { name: 'Kolkata',   x: 368, y: 210, fraud: 62, disruption: 55 },
+                  { name: 'Chennai',   x: 248, y: 418, fraud: 28, disruption: 70 },
+                  { name: 'Pune',      x: 118, y: 298, fraud: 20, disruption: 55 },
                 ].map((city, i) => {
                   const isHighFraud = city.fraud > 60;
                   const isWatch     = city.fraud > 40 && city.fraud <= 60;
                   const dotColor    = isHighFraud ? '#fc8181' : isWatch ? '#f6ad55' : '#68d391';
                   const isUserCity  = (insuranceData?.city || '').toLowerCase() === city.name.toLowerCase();
+                  const r           = isUserCity ? 10 : 7;
                   return (
-                    <g key={i}>
-                      {/* Pulse ring for high-fraud cities */}
-                      {isHighFraud && (
-                        <circle cx={city.x} cy={city.y} r="14" fill="none"
-                          stroke={dotColor} strokeWidth="1" opacity="0.4"
-                          style={{ animation: 'mapPulse 2s ease-out infinite' }}/>
+                    <g key={i} filter="url(#cityGlow)">
+                      {/* Pulse ring */}
+                      {(isHighFraud || isUserCity) && (
+                        <circle cx={city.x} cy={city.y} r={r + 8} fill="none"
+                          stroke={dotColor} strokeWidth="1.2" opacity="0.35"
+                          style={{ animation: 'mapPulse 2s ease-out infinite', animationDelay: `${i * 0.3}s` }}/>
                       )}
-                      <circle cx={city.x} cy={city.y} r={isUserCity ? 9 : 7}
-                        fill={dotColor} stroke="white" strokeWidth={isUserCity ? 2.5 : 1.5}
-                        style={{ filter: `drop-shadow(0 2px 4px ${dotColor}88)` }}/>
-                      {/* User city star */}
+                      <circle cx={city.x} cy={city.y} r={r}
+                        fill={dotColor} stroke="white" strokeWidth="2"
+                      />
                       {isUserCity && (
-                        <text x={city.x} y={city.y + 4} textAnchor="middle" fontSize="8" fill="white" fontWeight="900">★</text>
+                        <text x={city.x} y={city.y + 4} textAnchor="middle" fontSize="9" fill="white" fontWeight="900">★</text>
                       )}
-                      <text x={city.x} y={city.y - 12} textAnchor="middle"
-                        fontSize="9" fill="#1e3a5f" fontWeight="600">{city.name}</text>
-                      <text x={city.x} y={city.y + 20} textAnchor="middle"
-                        fontSize="8" fill={dotColor} fontWeight="700">{city.fraud}% fraud</text>
+                      {/* Label */}
+                      <text x={city.x} y={city.y - r - 5} textAnchor="middle"
+                        fontSize="10" fill="#1e3a5f" fontWeight="700"
+                        style={{ textShadow: '0 1px 2px white' }}>{city.name}</text>
+                      <text x={city.x} y={city.y + r + 13} textAnchor="middle"
+                        fontSize="9" fill={dotColor} fontWeight="700">{city.fraud}%</text>
                     </g>
                   );
                 })}
               </svg>
+
               <div className="ade-map-legend">
                 <span><span style={{color:'#fc8181'}}>●</span> High Fraud</span>
                 <span><span style={{color:'#f6ad55'}}>●</span> Watch</span>
