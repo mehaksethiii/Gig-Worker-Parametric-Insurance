@@ -532,14 +532,16 @@ const DashboardPage = () => {
 
   // ── Shared daily limit helpers (shared across voice, disaster, weather) ──
   const getDailyClaimCount = React.useCallback(() => {
-    const userId = getToken() || 'guest';
+    const rider = getRider();
+    const userId = rider?._id || rider?.email || 'guest';
     const today = new Date().toDateString();
     if (localStorage.getItem(`lastClaimDate_${userId}`) !== today) return 0;
     return parseInt(localStorage.getItem(`claimsToday_${userId}`) || '0');
   }, []);
 
   const incrementDailyCount = React.useCallback(() => {
-    const userId = getToken() || 'guest';
+    const rider = getRider();
+    const userId = rider?._id || rider?.email || 'guest';
     const today = new Date().toDateString();
     const cur = localStorage.getItem(`lastClaimDate_${userId}`) === today
       ? parseInt(localStorage.getItem(`claimsToday_${userId}`) || '0') : 0;
