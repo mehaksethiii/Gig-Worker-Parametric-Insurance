@@ -1184,6 +1184,9 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     if (!source) { navigate('/register'); return; }
     const merged = { ...source, plan: source.insurancePlan?.name || source.plan, premium: source.insurancePlan?.premium || source.premium };
     setInsuranceData(merged);
+    // Clear old shared (non-user-specific) claim counter keys
+    localStorage.removeItem('claimsToday');
+    localStorage.removeItem('lastClaimDate');
     fetchWeather(merged.city, merged);
     fetchClaims();
 
