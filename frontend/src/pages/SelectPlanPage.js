@@ -61,7 +61,7 @@ const SelectPlanPage = () => {
     const plan = PLANS.find(p => p.id === selectedPlan);
     if (!plan) return;
     setLoadingRisk(true);
-    fetch('/api/premium/calculate', {
+    fetch('https://gig-worker-parametric-insurance.onrender.com/api/premium/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ city: riderData.city, workingHours: riderData.workingHours, deliveryType: riderData.deliveryType, plan: plan.name }),
@@ -78,7 +78,7 @@ const SelectPlanPage = () => {
     // Save UPI to backend if provided
     const token = getToken();
     if (token && upiId && upiId.includes('@')) {
-      fetch('/api/settlement/payment-details', {
+      fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/payment-details', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ upiId, preferredPaymentMode: 'upi' }),
@@ -96,7 +96,7 @@ const SelectPlanPage = () => {
     };
     localStorage.setItem('insuranceData', JSON.stringify(insuranceData));
     if (token) {
-      fetch('/api/auth/update-plan', {
+      fetch('https://gig-worker-parametric-insurance.onrender.com/api/auth/update-plan', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan: plan.name, premium, maxPayout: plan.maxPayout }),

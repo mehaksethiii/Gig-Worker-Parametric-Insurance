@@ -259,7 +259,7 @@ const SettlementTab = ({ insuranceData, getToken, addToast }) => {
   React.useEffect(() => {
     const token = getToken();
     if (!token) return;
-    fetch('/api/settlement/history', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/history', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : { payouts: [] })
       .then(d => setHistory(d.payouts || []))
       .catch(() => {});
@@ -269,7 +269,7 @@ const SettlementTab = ({ insuranceData, getToken, addToast }) => {
     if (!upiId.includes('@')) { addToast('Invalid UPI ID — format: name@upi', 'warning'); return; }
     setSavingUpi(true);
     try {
-      const res = await fetch('/api/settlement/upi', {
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/upi', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ upiId }),
@@ -282,7 +282,7 @@ const SettlementTab = ({ insuranceData, getToken, addToast }) => {
   const runSimulation = async () => {
     setSimulating(true); setSimPayout(null);
     try {
-      const res = await fetch('/api/settlement/initiate', {
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ amount: 480, reason: 'Heavy Rainfall / Flood', triggerData: { rainfall: 68 } }),
@@ -294,7 +294,7 @@ const SettlementTab = ({ insuranceData, getToken, addToast }) => {
       let attempts = 0;
       const poll = setInterval(async () => {
         attempts++;
-        const sr = await fetch(`/api/settlement/status/${data.payoutId}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+        const sr = await fetch(`https://gig-worker-parametric-insurance.onrender.com/api/settlement/status/${data.payoutId}`, { headers: { Authorization: `Bearer ${getToken()}` } });
         const sd = await sr.json();
         setSimPayout(sd);
         if (sd.status === 'completed' || sd.status === 'failed' || attempts > 15) {
@@ -444,7 +444,7 @@ const PaymentSettingsCard = ({ insuranceData, getToken, addToast }) => {
     }
     setSaving(true);
     try {
-      const res = await fetch('/api/settlement/payment-details', {
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/payment-details', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ upiId, bankName, accountNumber, ifscCode, preferredPaymentMode }),
@@ -563,7 +563,7 @@ const DashboardPage = () => {
     }
     // 1. Call backend settlement
     try {
-      const sr = await fetch('/api/settlement/initiate', {
+      const sr = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -611,7 +611,7 @@ const DashboardPage = () => {
     if (!rider.familyEmail) return;
     setFamilySending(true);
     try {
-      await fetch('/api/notify/family', {
+      await fetch('https://gig-worker-parametric-insurance.onrender.com/api/notify/family', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -994,7 +994,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     if (!riderInfo?.familyEmail || familyNotified) return;
     setFamilyNotified(true);
     try {
-      const res = await fetch('/api/notify/family', {
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/notify/family', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1018,7 +1018,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
 
   const fetchWeather = async (city, riderInfo) => {
     try {
-      const res = await fetch(`/api/weather/current/${encodeURIComponent(city)}`);
+      const res = await fetch(`https://gig-worker-parametric-insurance.onrender.com/api/weather/current/${encodeURIComponent(city)}`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       setWeatherData(data);
@@ -1054,7 +1054,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     const token = getToken();
     if (!token) return;
     try {
-      const res = await fetch('/api/claims/my', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/my', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (data.claims?.length) setClaims(data.claims);
     } catch (_) {}
@@ -1104,7 +1104,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     const token = getToken();
     let claimId = null;
     try {
-      const cr = await fetch('/api/claims/submit', {
+      const cr = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount, reason, triggerData: { rainfall: weatherData.rainfall, temperature: weatherData.temperature, aqi: weatherData.aqi } }),
@@ -1128,7 +1128,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
     await new Promise(r => setTimeout(r, 1000));
     log('💸 Initiating automatic settlement...');
     try {
-      const sr = await fetch('/api/settlement/initiate', {
+      const sr = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ claimId, amount, reason, triggerData: { rainfall: weatherData.rainfall } }),
@@ -2200,7 +2200,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
     let validationResult;
     try {
       const token = getToken();
-      const res = await fetch('/api/claims/report-disaster', {
+      const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/report-disaster', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ lat: coords.lat, lon: coords.lon, reason: d.reason, disasterType: d.id, speedKmh: 0 }),
@@ -2250,7 +2250,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
       setStep('validating');
       try {
         const token = getToken();
-        const crowdRes = await fetch('/api/claims/report-disaster', {
+        const crowdRes = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/report-disaster', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ lat, lon, reason: selected.reason, disasterType: selected.id, speedKmh: speed }),
@@ -2296,7 +2296,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
       const token = getToken();
 
       // Step 1 — Submit claim
-      const cr = await fetch('/api/claims/submit', {
+      const cr = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -2319,7 +2319,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
       }
 
       // Step 2 — Auto-trigger settlement
-      await fetch('/api/settlement/initiate', {
+      await fetch('https://gig-worker-parametric-insurance.onrender.com/api/settlement/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ claimId, amount, reason: selected.reason, triggerData: validation?.weatherSnapshot }),

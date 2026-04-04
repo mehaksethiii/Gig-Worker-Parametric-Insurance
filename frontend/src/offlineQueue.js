@@ -20,7 +20,7 @@ export const syncOfflineClaims = async (token) => {
   if (!queue.length) return { synced: 0 };
 
   try {
-    const res = await fetch('/api/claims/sync-offline', {
+    const res = await fetch('https://gig-worker-parametric-insurance.onrender.com/api/claims/sync-offline', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ offlineClaims: queue }),
