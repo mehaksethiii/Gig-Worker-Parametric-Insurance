@@ -532,20 +532,20 @@ const DashboardPage = () => {
 
   // ── Shared daily limit helpers (shared across voice, disaster, weather) ──
   const getDailyClaimCount = React.useCallback(() => {
-    const userId = insuranceData?.email || 'guest';
+    const userId = getToken() || 'guest';
     const today = new Date().toDateString();
     if (localStorage.getItem(`lastClaimDate_${userId}`) !== today) return 0;
     return parseInt(localStorage.getItem(`claimsToday_${userId}`) || '0');
-  }, [insuranceData]);
+  }, []);
 
   const incrementDailyCount = React.useCallback(() => {
-    const userId = insuranceData?.email || 'guest';
+    const userId = getToken() || 'guest';
     const today = new Date().toDateString();
     const cur = localStorage.getItem(`lastClaimDate_${userId}`) === today
       ? parseInt(localStorage.getItem(`claimsToday_${userId}`) || '0') : 0;
     localStorage.setItem(`lastClaimDate_${userId}`, today);
     localStorage.setItem(`claimsToday_${userId}`, String(cur + 1));
-  }, [insuranceData]);
+  }, []);
 
   // Call this instead of setPayoutReceipt directly — calls backend, updates timeline, bell, then OTP
   const triggerPayout = React.useCallback(async (receiptData) => {
