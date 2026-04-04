@@ -51,7 +51,7 @@ async function runSettlement(payout, rider) {
     const isActive   = rider.isActive;
     const dayStart   = new Date(); dayStart.setHours(0, 0, 0, 0);
 
-    // Daily limit — max 1 completed payout per day per rider
+    // Daily limit — max 3 completed payout per day per rider
     const todayPayouts = await Payout.countDocuments({
       riderId: rider._id,
       createdAt: { $gte: dayStart },
@@ -72,7 +72,7 @@ async function runSettlement(payout, rider) {
       await payout.save();
       return { success: false, reason };
     }
-    if (todayPayouts >= 2) {
+    if (todayPayouts >= 3) {
       const reason = `Daily claim limit reached (2 per day). Next claim available tomorrow.`;
       addStep(payout, 'eligibility_check', 'failed', reason);
       payout.status = 'failed'; payout.failureReason = reason;

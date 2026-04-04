@@ -184,7 +184,7 @@ const PayoutReceiptPopup = ({ receipt, onClose }) => {
           <div className="prm-header" style={{ background: 'linear-gradient(135deg,#c53030,#9b2c2c)' }}>
             <div className="prm-check">🚫</div>
             <h2>Daily Limit Reached</h2>
-            <p>Maximum 2 claims per day</p>
+            <p>Maximum 3 claims per day</p>
           </div>
           <div className="prm-body">
             <div style={{ background:'#fff5f5', border:'1.5px solid #fc8181', borderRadius:'12px', padding:'1.2rem', marginBottom:'1rem' }}>
@@ -194,7 +194,7 @@ const PayoutReceiptPopup = ({ receipt, onClose }) => {
               </p>
             </div>
             <div className="prm-rows">
-              <div className="prm-row"><span>Claims used today</span><strong style={{color:'#c53030'}}>{receipt.claimsToday} / 2</strong></div>
+              <div className="prm-row"><span>Claims used today</span><strong style={{color:'#c53030'}}>{receipt.claimsToday} / 3</strong></div>
               <div className="prm-row"><span>Resets at</span><strong>Midnight tonight</strong></div>
               <div className="prm-row"><span>Next claim available</span><strong style={{color:'#48bb78'}}>Tomorrow</strong></div>
               <div className="prm-row"><span>Weekly max payouts</span><strong>As per your plan</strong></div>
@@ -553,12 +553,12 @@ const DashboardPage = () => {
   const triggerPayout = React.useCallback(async (receiptData) => {
     const token = getToken();
 
-    // Frontend daily limit — max 2 claims per day (shared across all claim types)
+    // Frontend daily limit — max 3 claims per day (shared across all claim types)
     const claimsToday = getDailyClaimCount();
-    if (claimsToday >= 2) {
+    if (claimsToday >= 3) {
       setPayoutReceipt({ limitReached: true, claimsToday });
-      addToast('🚫 Daily claim limit reached — max 2 per day', 'warning');
-      addNotification('🚫 Daily limit reached — 2 claims already made today', 'warning');
+      addToast('🚫 Daily claim limit reached — max 3 per day', 'warning');
+      addNotification('🚫 Daily limit reached — 3 claims already made today', 'warning');
       return;
     }
     // 1. Call backend settlement
@@ -891,7 +891,7 @@ RideShield's heat threshold trigger activated on day 3 of the heatwave. Meena re
           setTimeout(() => {
             // Check daily limit before approving
             const claimsCount = getDailyClaimCount ? getDailyClaimCount() : 0;
-            if (claimsCount >= 2) {
+            if (claimsCount >= 3) {
               const limitMsg = isHindi
                 ? 'Aapki aaj ki claim limit poori ho gayi hai. Kal dobara try karein. RideShield aapke saath hai.'
                 : 'Daily claim limit reached. You have already made 2 claims today. Please try again tomorrow.';
@@ -2287,7 +2287,7 @@ const DisasterReportTab = ({ insuranceData, getToken, addToast, onPayout, increm
 
     // Check shared daily limit before submitting
     const claimsToday = getDailyClaimCount ? getDailyClaimCount() : 0;
-    if (claimsToday >= 2) {
+    if (claimsToday >= 3) {
       setSubmitting(false);
       if (onPayout) onPayout({ limitReached: true, claimsToday });
       return;
