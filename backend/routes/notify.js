@@ -1,24 +1,18 @@
 const express = require('express');
-const nodemailer = require('nodemailer');
 const router = express.Router();
 
-// Build transporter — Gmail (real) or Ethereal (demo fallback)
-const buildTransporter = async () => {
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,   // Gmail App Password (16-char)
-      },
-    });
-  }
-  // Ethereal demo fallback
-  const testAccount = await nodemailer.createTestAccount();
-  return nodemailer.createTransport({
-    host: 'smtp.ethereal.email', port: 587, secure: false,
-    auth: { user: testAccount.user, pass: testAccount.pass },
+// Send email via Resend API (HTTPS — works on Render free tier)
+const sendEmail = async ({ to, subject, html }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY not set');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'RideShield <onboarding@resend.dev>', to, subject, html }),
   });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Resend error');
+  return data;
 };
 
 const buildEmailHtml = ({ riderName, familyName, familyRelation, reason, claimAmount, status }) => {
@@ -105,34 +99,28 @@ router.post('/family', async (req, res) => {
     : `⚠️ Don't worry — RideShield is protecting ${riderName} right now`;
 
   try {
-    const transporter = await buildTransporter();
-    const info = await transporter.sendMail({
-      from: `"RideShield ❤️" <${process.env.EMAIL_USER || 'rideshield@demo.com'}>`,
+    const info = await sendEmail({
       to: familyEmail,
       subject,
       html: buildEmailHtml({ riderName, familyName, familyRelation, reason, claimAmount, status }),
     });
-
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log('✅ Family email sent to:', familyEmail, previewUrl || info.messageId);
-    res.json({ success: true, preview: previewUrl || null, messageId: info.messageId });
+    console.log('✅ Family email sent to:', familyEmail, info.id);
+    res.json({ success: true, id: info.id });
   } catch (err) {
     console.error('❌ Email error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/notify/test — quick test endpoint
+// GET /api/notify/test
 router.get('/test', async (req, res) => {
   try {
-    const transporter = await buildTransporter();
-    const info = await transporter.sendMail({
-      from: `"RideShield Test" <${process.env.EMAIL_USER || 'test@demo.com'}>`,
-      to: process.env.EMAIL_USER || 'test@ethereal.email',
+    const info = await sendEmail({
+      to: process.env.EMAIL_USER || 'test@example.com',
       subject: '✅ RideShield Email Test',
-      html: '<h2>Email is working! 🎉</h2><p>Your RideShield email setup is configured correctly.</p>',
+      html: '<h2>Email is working! 🎉</h2><p>Your RideShield Resend setup is configured correctly.</p>',
     });
-    res.json({ success: true, preview: nodemailer.getTestMessageUrl(info) || null });
+    res.json({ success: true, id: info.id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
