@@ -1,35 +1,55 @@
 const mongoose = require('mongoose');
 
 const claimSchema = new mongoose.Schema({
-  riderId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Rider', required: true },
-  amount:    { type: Number, required: true },
-  reason:    { type: String, required: true },
+  riderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Rider', required: true },
+
+  // ── Parametric trigger fields ─────────────────────────────────────────────
+  triggerType: {
+    type: String,
+    enum: ['heat', 'rain', 'pollution', 'combined'],
+    required: true,
+  },
+  payoutAmount: { type: Number, required: true },   // final approved payout in ₹
+
+  // ── Legacy / extended fields (kept for backward compat) ───────────────────
+  amount:  { type: Number },   // alias for payoutAmount on older docs
+  reason:  { type: String },   // human-readable trigger description
+
   triggerData: {
-    rainfall:    Number,
-    temperature: Number,
-    aqi:         Number,
+    rainfall:    Number,   // mm
+    temperature: Number,   // °C
+    aqi:         Number,   // US AQI
     city:        String,
   },
-  // Flood validation evidence
+
+  // Validation evidence (GPS, crowd, photo)
   validation: {
-    gpsLat:          Number,   // rider's exact lat at claim time
-    gpsLon:          Number,   // rider's exact lon at claim time
-    gpsAccuracy:     Number,   // metres
-    speedKmh:        Number,   // movement speed — low = stuck
-    hyperLocalRain:  Number,   // OWM rainfall at exact GPS coords
-    crowdCount:      Number,   // nearby riders who reported same condition
-    photoUrl:        String,   // optional photo evidence
-    confidenceScore: Number,   // 0-100 composite validation score
+    gpsLat:          Number,
+    gpsLon:          Number,
+    gpsAccuracy:     Number,
+    speedKmh:        Number,
+    hyperLocalRain:  Number,
+    crowdCount:      Number,
+    photoUrl:        String,
+    confidenceScore: Number,   // 0-100
     method:          String,   // 'auto' | 'user-reported' | 'crowd-corroborated'
   },
+
+  // ── Status ────────────────────────────────────────────────────────────────
   status: {
     type: String,
-    enum: ['Processing', 'Approved', 'Flagged', 'Rejected'],
-    default: 'Processing',
+    enum: ['pending', 'approved', 'paid', 'flagged', 'rejected'],
+    default: 'pending',
   },
+
   fraudFlags: [String],
   paymentId:  String,
   createdAt:  { type: Date, default: Date.now },
+});
+
+// Virtual so old code reading .amount still works
+claimSchema.virtual('effectiveAmount').get(function () {
+  return this.payoutAmount ?? this.amount;
 });
 
 module.exports = mongoose.model('Claim', claimSchema);

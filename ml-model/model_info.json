@@ -1,0 +1,72 @@
+{
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 200,
+  "max_depth": 12,
+  "training_samples": 4000,
+  "test_samples": 1000,
+  "test_accuracy": 0.858,
+  "cv_accuracy_mean": 0.8454,
+  "cv_accuracy_std": 0.0159,
+  "features": [
+    "temperature",
+    "aqi",
+    "rainfall",
+    "humidity",
+    "wind_speed",
+    "working_hours",
+    "experience_yrs",
+    "city_risk",
+    "delivery_risk",
+    "vehicle_risk",
+    "heat_aqi_interaction",
+    "rain_wind_interaction",
+    "fatigue_score",
+    "heat_stress_index",
+    "multi_trigger"
+  ],
+  "feature_importance": {
+    "heat_aqi_interaction": 0.1971,
+    "aqi": 0.1591,
+    "multi_trigger": 0.1524,
+    "temperature": 0.0816,
+    "city_risk": 0.0571,
+    "fatigue_score": 0.056,
+    "rainfall": 0.0548,
+    "heat_stress_index": 0.0526,
+    "wind_speed": 0.0418,
+    "working_hours": 0.0414,
+    "humidity": 0.0344,
+    "experience_yrs": 0.0331,
+    "rain_wind_interaction": 0.0238,
+    "delivery_risk": 0.0084,
+    "vehicle_risk": 0.0063
+  },
+  "classes": [
+    "High",
+    "Low",
+    "Medium"
+  ],
+  "risk_thresholds": {
+    "High": "score >= 68",
+    "Medium": "score >= 42",
+    "Low": "score < 42"
+  },
+  "dataset_info": {
+    "total_samples": 5000,
+    "source": "Synthetic \u2014 based on Kaggle delivery/gig-worker + IMD weather + CPCB AQI distributions",
+    "cities": [
+      "Mumbai",
+      "Delhi",
+      "Bangalore",
+      "Hyderabad",
+      "Chennai",
+      "Kolkata",
+      "Pune"
+    ],
+    "class_distribution": {
+      "Medium": 2383,
+      "Low": 1534,
+      "High": 1083
+    }
+  }
+}
